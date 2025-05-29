@@ -2,9 +2,9 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Models\Cctv;
 use App\Models\Health;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 
 class GetDataHealth extends Command
@@ -31,7 +31,7 @@ class GetDataHealth extends Command
         $this->info('Starting GetDataHealth command...');
         $this->info('Querying active CCTVs...');
         $cctvs = Cctv::where('status', 1)->get();
-        $this->info('Found ' . $cctvs->count() . ' active CCTVs.');
+        $this->info('Found '.$cctvs->count().' active CCTVs.');
         foreach ($cctvs as $cctv) {
             $this->info("Processing CCTV: {$cctv->ip} (ID: {$cctv->id})");
             // --- HAS_CAMERA LOGIC ---
@@ -48,8 +48,8 @@ class GetDataHealth extends Command
                     $camerasEnabled = 0;
                     if ($channelsXml && isset($channelsXml->VideoInputChannel)) {
                         foreach ($channelsXml->VideoInputChannel as $channel) {
-                            $enabled = ((string)$channel->videoInputEnabled === 'true');
-                            $resDesc = (string)($channel->resDesc ?? '');
+                            $enabled = ((string) $channel->videoInputEnabled === 'true');
+                            $resDesc = (string) ($channel->resDesc ?? '');
                             if ($enabled && stripos($resDesc, 'NO VIDEO') === false) {
                                 $camerasActive++;
                             }
@@ -65,7 +65,7 @@ class GetDataHealth extends Command
                     $this->error("Failed to get camera channel data from {$cctv->ip}");
                 }
             } catch (\Exception $e) {
-                $this->error("Error getting camera channels for {$cctv->ip}: " . $e->getMessage());
+                $this->error("Error getting camera channels for {$cctv->ip}: ".$e->getMessage());
             }
             // --- END HAS_CAMERA LOGIC ---
 
@@ -82,23 +82,23 @@ class GetDataHealth extends Command
                         $this->info('Inserting Health record...');
                         Health::create([
                             'cctv_id' => $cctv->id,
-                            'temprature' => (string)($xml->temprature ?? null),
-                            'powerOnDay' => (string)($xml->powerOnDay ?? null),
-                            'allEvaluaingStatus' => (string)($xml->allEvaluaingStatus ?? null),
-                            'active_cameras' => $camerasActive
+                            'temprature' => (string) ($xml->temprature ?? null),
+                            'powerOnDay' => (string) ($xml->powerOnDay ?? null),
+                            'allEvaluaingStatus' => (string) ($xml->allEvaluaingStatus ?? null),
+                            'active_cameras' => $camerasActive,
                         ]);
                         $testResultList = [];
                         if (isset($xml->TestResultList->TestResult)) {
                             $this->info('Parsing TestResultList...');
                             foreach ($xml->TestResultList->TestResult as $result) {
                                 $testResultList[] = [
-                                    'attributeID' => (string)($result->attributeID ?? null),
-                                    'status' => (string)($result->status ?? null),
-                                    'flags' => (string)($result->flags ?? null),
-                                    'thresholds' => (string)($result->thresholds ?? null),
-                                    'value' => (string)($result->value ?? null),
-                                    'worst' => (string)($result->worst ?? null),
-                                    'rawValue' => (string)($result->rawValue ?? null),
+                                    'attributeID' => (string) ($result->attributeID ?? null),
+                                    'status' => (string) ($result->status ?? null),
+                                    'flags' => (string) ($result->flags ?? null),
+                                    'thresholds' => (string) ($result->thresholds ?? null),
+                                    'value' => (string) ($result->value ?? null),
+                                    'worst' => (string) ($result->worst ?? null),
+                                    'rawValue' => (string) ($result->rawValue ?? null),
                                 ];
                             }
                         }
@@ -113,7 +113,7 @@ class GetDataHealth extends Command
                     $this->error("Failed to get health data from {$cctv->ip}");
                 }
             } catch (\Exception $e) {
-                $this->error("Error for {$cctv->ip}: " . $e->getMessage());
+                $this->error("Error for {$cctv->ip}: ".$e->getMessage());
             }
         }
         $this->info('GetDataHealth command completed.');

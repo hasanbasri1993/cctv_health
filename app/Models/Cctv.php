@@ -14,14 +14,14 @@ class Cctv extends Model
         'password',
         'has_camera',
         'status',
-        'test_result_list'
+        'test_result_list',
     ];
 
     protected $casts = [
         'test_result_list' => 'array',
     ];
 
-    function health(): HasMany
+    public function health(): HasMany
     {
         return $this->hasMany(Health::class);
     }

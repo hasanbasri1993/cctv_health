@@ -27,12 +27,11 @@ class ViewCctv extends ViewRecord
             TemperatureChart::class,
         ];
     }
-    
+
     public function getWidgetData(): array
     {
         return [
             'record' => $this->getRecord(),
         ];
     }
-
 }

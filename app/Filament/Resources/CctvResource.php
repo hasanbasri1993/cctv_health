@@ -8,7 +8,6 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Columns\Summarizers\Count;
 use Filament\Tables\Table;
 
 class CctvResource extends Resource
@@ -57,15 +56,17 @@ class CctvResource extends Resource
                     ->getStateUsing(function (Cctv $cctv) {
                         $health = $cctv->health()->latest()->first();
                         if ($health) {
-                            return $health->temprature . " °C";
+                            return $health->temprature.' °C';
                         }
+
                         return 'No data';
                     })
                     ->description(function (Cctv $cctv) {
                         $health = $cctv->health()->latest()->first();
                         if ($health) {
-                            return $health->powerOnDay . " Days";
+                            return $health->powerOnDay.' Days';
                         }
+
                         return 'No data';
                     })
                     ->searchable(),
@@ -75,6 +76,7 @@ class CctvResource extends Resource
                         if ($health) {
                             return $health->selfEvaluaingStatus;
                         }
+
                         return 'No data';
                     })
                     ->searchable(),
