@@ -110,11 +110,21 @@ const activeCategoryDef = computed(() =>
 );
 
 // Teleported tooltip
-const tooltip = ref({ visible: false, type: null, device: null, x: 0, y: 0 });
+const tooltip = ref({ visible: false, type: null, device: null, x: 0, y: 0, placement: 'bottom' });
 
 function showTooltip(e, device, type) {
     const rect = e.currentTarget.getBoundingClientRect();
-    tooltip.value = { visible: true, type, device, x: rect.left + rect.width / 2, y: rect.bottom + 8 };
+    const vh = window.innerHeight;
+    const isLowerHalf = rect.bottom > vh / 2;
+    
+    tooltip.value = { 
+        visible: true, 
+        type, 
+        device, 
+        x: rect.left + rect.width / 2, 
+        y: isLowerHalf ? rect.top - 8 : rect.bottom + 8,
+        placement: isLowerHalf ? 'top' : 'bottom'
+    };
 }
 function hideTooltip() {
     tooltip.value = { ...tooltip.value, visible: false };
@@ -508,10 +518,11 @@ onUnmounted(() => {
         <div
             v-if="tooltip.visible"
             class="pointer-events-none fixed z-[9999] -translate-x-1/2"
+            :class="[tooltip.placement === 'top' ? '-translate-y-full' : '']"
             :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }"
         >
-            <!-- arrow -->
-            <div class="mx-auto mb-px flex justify-center">
+            <!-- arrow pointing up -->
+            <div v-if="tooltip.placement === 'bottom'" class="mx-auto mb-px flex justify-center">
                 <div class="h-2 w-2 rotate-45 border-l border-t border-white/[0.08] bg-slate-900"></div>
             </div>
             <!-- video loss -->
@@ -535,6 +546,11 @@ onUnmounted(() => {
                         <span v-if="st.temperature" class="text-[11px] text-slate-500">{{ st.temperature }}°C</span>
                     </div>
                 </div>
+            </div>
+            
+            <!-- arrow pointing down -->
+            <div v-if="tooltip.placement === 'top'" class="mx-auto mt-px flex justify-center">
+                <div class="h-2 w-2 rotate-45 border-r border-b border-white/[0.08] bg-slate-900"></div>
             </div>
         </div>
     </Teleport>
