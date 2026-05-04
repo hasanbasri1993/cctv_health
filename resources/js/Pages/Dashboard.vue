@@ -462,7 +462,9 @@ onUnmounted(() => {
                                     {{ device.name }}
                                 </a>
                             </td>
-                            <td class="px-4 py-3 font-mono text-slate-400">{{ device.ip_address }}</td>
+                            <td class="px-4 py-3 font-mono text-slate-400">
+                                <a :href="'http://' + device.ip_address" target="_blank" class="hover:text-cyan-400 transition-colors">{{ device.ip_address }}</a>
+                            </td>
                             <td class="px-4 py-3">
                                 <span :class="[
                                     'inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium',
