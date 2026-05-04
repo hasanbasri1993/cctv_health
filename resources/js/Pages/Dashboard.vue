@@ -409,7 +409,7 @@ onUnmounted(() => {
             </div>
 
             <!-- Table -->
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto overflow-y-visible">
                 <table class="w-full text-[13px]">
                     <thead>
                         <tr class="border-b border-white/[0.04] text-[11px] uppercase tracking-wider text-slate-500">
@@ -462,7 +462,10 @@ onUnmounted(() => {
                                     <span class="inline-flex cursor-default items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-400">
                                         {{ device.no_video_count }} ch
                                     </span>
-                                    <div class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 hidden -translate-x-1/2 group-hover:block">
+                                    <div class="pointer-events-none absolute left-1/2 top-full z-[100] mt-1.5 hidden -translate-x-1/2 group-hover:block">
+                                        <div class="absolute -top-1.5 left-1/2 -translate-x-1/2">
+                                            <div class="h-2 w-2 rotate-45 border-l border-t border-white/[0.08] bg-slate-900"></div>
+                                        </div>
                                         <div class="min-w-[160px] rounded-md border border-white/[0.08] bg-slate-900 p-2 shadow-xl text-left">
                                             <p class="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">No Video Channels</p>
                                             <div v-for="ch in device.channels" :key="ch.id" class="flex items-center gap-2 py-0.5">
@@ -471,9 +474,6 @@ onUnmounted(() => {
                                                     CH{{ ch.channel_number }}{{ ch.name ? ' — ' + ch.name : '' }}
                                                 </span>
                                             </div>
-                                        </div>
-                                        <div class="mx-auto h-1.5 w-2.5 overflow-hidden">
-                                            <div class="mx-auto h-2 w-2 rotate-45 border-b border-r border-white/[0.08] bg-slate-900"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -484,7 +484,10 @@ onUnmounted(() => {
                                     <span class="inline-flex cursor-default items-center gap-1 rounded-full bg-indigo-500/15 px-2 py-0.5 text-[11px] font-semibold text-indigo-400">
                                         {{ device.fault_storage_count }} fault
                                     </span>
-                                    <div class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 hidden -translate-x-1/2 group-hover:block">
+                                    <div class="pointer-events-none absolute left-1/2 top-full z-[100] mt-1.5 hidden -translate-x-1/2 group-hover:block">
+                                        <div class="absolute -top-1.5 left-1/2 -translate-x-1/2">
+                                            <div class="h-2 w-2 rotate-45 border-l border-t border-white/[0.08] bg-slate-900"></div>
+                                        </div>
                                         <div class="min-w-[180px] rounded-md border border-white/[0.08] bg-slate-900 p-2 shadow-xl text-left">
                                             <p class="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Storage Issues</p>
                                             <div v-for="st in device.storages" :key="st.id" class="flex items-center justify-between gap-3 py-0.5">
@@ -503,9 +506,6 @@ onUnmounted(() => {
                                                     <span v-if="st.temperature" class="text-[11px] text-slate-500">{{ st.temperature }}°C</span>
                                                 </div>
                                             </div>
-                                        </div>
-                                        <div class="mx-auto h-1.5 w-2.5 overflow-hidden">
-                                            <div class="mx-auto h-2 w-2 rotate-45 border-b border-r border-white/[0.08] bg-slate-900"></div>
                                         </div>
                                     </div>
                                 </div>
