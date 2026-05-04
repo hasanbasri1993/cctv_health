@@ -38,6 +38,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('role:admin')->group(function () {
         Route::get('/configuration', [ConfigurationController::class, 'index'])->name('configuration.index');
         Route::post('/configuration', [ConfigurationController::class, 'update'])->name('configuration.update');
+        Route::post('/configuration/test-telegram', [ConfigurationController::class, 'testTelegram'])->name('configuration.test-telegram');
+        Route::post('/configuration/test-email', [ConfigurationController::class, 'testEmail'])->name('configuration.test-email');
     });
 });
 
