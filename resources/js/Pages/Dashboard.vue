@@ -429,9 +429,9 @@ onUnmounted(() => {
                 </button>
             </div>
 
-            <!-- Table -->
-            <div class="relative">
-                <table class="w-full min-w-[640px] text-[13px]">
+            <!-- Table (desktop) -->
+            <div class="hidden lg:block">
+                <table class="w-full text-[13px]">
                     <thead>
                         <tr class="border-b border-white/[0.04] text-[11px] uppercase tracking-wider text-slate-500">
                             <th class="px-4 py-2.5 text-left font-medium">Device</th>
@@ -508,6 +508,75 @@ onUnmounted(() => {
                         </tr>
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Cards (mobile) -->
+            <div class="lg:hidden divide-y divide-white/[0.04]">
+                <div v-if="filteredDevices.length === 0" class="px-4 py-8 text-center text-slate-500">
+                    <svg class="mx-auto mb-2 h-8 w-8 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    No issues detected
+                </div>
+                <div
+                    v-for="device in filteredDevices"
+                    :key="device.id"
+                    class="p-4"
+                >
+                    <!-- Device name + status -->
+                    <div class="flex items-start justify-between gap-3 mb-2">
+                        <div class="min-w-0">
+                            <a :href="route('devices.show', device.id)" target="_blank" class="block truncate font-medium text-slate-200 hover:text-cyan-400 text-[14px]">
+                                {{ device.name }}
+                            </a>
+                            <a :href="'http://' + device.ip_address" target="_blank" class="block font-mono text-[12px] text-slate-500 hover:text-cyan-400 mt-0.5">
+                                {{ device.ip_address }}
+                            </a>
+                        </div>
+                        <span :class="[
+                            'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium shrink-0',
+                            device.status === 'online'  ? 'bg-emerald-500/15 text-emerald-400' :
+                            device.status === 'offline' ? 'bg-red-500/15 text-red-400' :
+                                                          'bg-slate-500/15 text-slate-400'
+                        ]">
+                            <span :class="[
+                                'h-1.5 w-1.5 rounded-full',
+                                device.status === 'online'  ? 'bg-emerald-400' :
+                                device.status === 'offline' ? 'bg-red-400' : 'bg-slate-400'
+                            ]"></span>
+                            {{ device.status }}
+                        </span>
+                    </div>
+                    <!-- Issue badges + channel count -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span
+                            v-if="(device.no_video_count ?? 0) > 0"
+                            class="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-400"
+                            @mouseenter="showTooltip($event, device, 'video')"
+                            @mouseleave="hideTooltip"
+                        >
+                            <span class="h-1.5 w-1.5 rounded-full bg-amber-400"></span>
+                            {{ device.no_video_count }} video loss
+                        </span>
+                        <span
+                            v-if="(device.fault_storage_count ?? 0) > 0"
+                            class="inline-flex items-center gap-1 rounded-full bg-indigo-500/15 px-2 py-0.5 text-[11px] font-semibold text-indigo-400"
+                            @mouseenter="showTooltip($event, device, 'storage')"
+                            @mouseleave="hideTooltip"
+                        >
+                            <span class="h-1.5 w-1.5 rounded-full bg-indigo-400"></span>
+                            {{ device.fault_storage_count }} storage fault
+                        </span>
+                        <span
+                            v-if="(device.active_alerts_count ?? 0) > 0"
+                            class="inline-flex items-center gap-1 rounded-full bg-cyan-500/15 px-2 py-0.5 text-[11px] font-semibold text-cyan-400"
+                        >
+                            <span class="h-1.5 w-1.5 rounded-full bg-cyan-400"></span>
+                            {{ device.active_alerts_count }} alert{{ device.active_alerts_count !== 1 ? 's' : '' }}
+                        </span>
+                        <span class="text-[11px] text-slate-500">{{ device.channels_count ?? 0 }} channels</span>
+                    </div>
+                </div>
             </div>
         </section>
         <div class="mt-4 text-center text-[11px] text-slate-600">
