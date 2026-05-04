@@ -275,8 +275,8 @@ const severityClasses = {
                             <label for="per-page" class="text-xs">Rows</label>
                             <select
                                 id="per-page"
-                                :value="perPage"
-                                @change="changePerPage($event.target.value)"
+                                v-model="perPage"
+                                @change="changePerPage(perPage)"
                                 class="rounded border border-gray-200 px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-indigo-400"
                             >
                                 <option value="5">5</option>
