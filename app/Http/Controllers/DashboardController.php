@@ -16,7 +16,9 @@ class DashboardController extends Controller
     {
         $devices = Device::withCount([
             'channels',
-            'alerts as active_alerts_count' => fn ($q) => $q->whereIn('status', ['active', 'acknowledged']),
+            'alerts as active_alerts_count'       => fn ($q) => $q->whereIn('status', ['active', 'acknowledged']),
+            'channels as no_video_count'           => fn ($q) => $q->where('status', 'no_video'),
+            'storages as fault_storage_count'      => fn ($q) => $q->whereIn('health_status', ['fault', 'unknown']),
         ])->orderBy('name')->get();
 
         $stats = Cache::remember('dashboard.stats', 30, function () use ($devices) {

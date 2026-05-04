@@ -14,13 +14,11 @@ import {
     Legend,
     DoughnutController,
     ArcElement,
-    BarController,
-    BarElement,
 } from 'chart.js';
 
 Chart.register(
     LineController, LineElement, PointElement, LinearScale, CategoryScale, Filler,
-    Tooltip, Legend, DoughnutController, ArcElement, BarController, BarElement,
+    Tooltip, Legend, DoughnutController, ArcElement,
 );
 
 const props = defineProps({
@@ -56,22 +54,14 @@ const toneClass = (tone) => ({
 // ===== Chart refs =====
 const activityCanvas = ref(null);
 const statusCanvas = ref(null);
-const zoneCanvas = ref(null);
 let activityChart = null;
 let statusChart = null;
-let zoneChart = null;
 
 // TODO: replace with API — last 24h camera activity
 const activityData = {
     labels: ['00:00','02:00','04:00','06:00','08:00','10:00','12:00','14:00','16:00','18:00','20:00','22:00'],
     online: [22,22,21,21,23,24,24,23,22,24,24,23],
     motion: [3,2,1,0,4,8,12,15,11,9,6,4],
-};
-
-// TODO: replace with API — alerts per zone last 7 days
-const zoneData = {
-    labels: ['Lobby','Parking','Warehouse','Back Gate','Office','Roof'],
-    counts: [12, 28, 7, 19, 4, 9],
 };
 
 const statusCategories = computed(() => [
@@ -89,6 +79,35 @@ const statusDominant = computed(() => {
     if (!exc.length) return { label: 'All Clear', count: totalDevices.value };
     return exc.reduce((a, b) => b.count > a.count ? b : a);
 });
+
+// Device issues table
+const activeCategory = ref(null); // null = all issues
+
+const deviceMatchesCategory = (device, label) => {
+    if (label === 'Camera Offline')               return device.status === 'offline';
+    if (label === 'Video Loss')                   return (device.no_video_count ?? 0) > 0;
+    if (label === 'Communication Exception')      return device.status === 'offline';
+    if (label === 'Recording Exception')          return (device.fault_storage_count ?? 0) > 0 && device.status === 'online';
+    if (label === 'No Recording Schedule Config') return (device.fault_storage_count ?? 0) > 0;
+    if (label === 'Arming Exception')             return (device.active_alerts_count ?? 0) > 0;
+    return false;
+};
+
+const filteredDevices = computed(() => {
+    if (activeCategory.value === null) {
+        return props.devices.filter(d =>
+            d.status === 'offline' ||
+            (d.no_video_count ?? 0) > 0 ||
+            (d.fault_storage_count ?? 0) > 0 ||
+            (d.active_alerts_count ?? 0) > 0
+        );
+    }
+    return props.devices.filter(d => deviceMatchesCategory(d, activeCategory.value));
+});
+
+const activeCategoryDef = computed(() =>
+    activeCategory.value ? statusCategories.value.find(c => c.label === activeCategory.value) : null
+);
 
 // TODO: replace with API — recent events feed
 const recentEvents = [
@@ -234,45 +253,6 @@ function buildStatusChart() {
     });
 }
 
-function buildZoneChart() {
-    if (!zoneCanvas.value) return;
-    const ctx = zoneCanvas.value.getContext('2d');
-    zoneChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: zoneData.labels,
-            datasets: [{
-                label: 'Alerts',
-                data: zoneData.counts,
-                backgroundColor: 'rgba(6, 182, 212, 0.55)',
-                hoverBackgroundColor: '#06b6d4',
-                borderRadius: 4,
-                borderSkipped: false,
-                barThickness: 22,
-            }],
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: '#0f172a',
-                    borderColor: 'rgba(255,255,255,0.08)',
-                    borderWidth: 1,
-                    titleColor: '#e2e8f0',
-                    bodyColor: '#cbd5e1',
-                    padding: 10,
-                },
-            },
-            scales: {
-                x: { grid: { display: false }, ticks: { color: tickColor, font: { size: 11 } } },
-                y: { grid: { color: gridColor, drawBorder: false }, ticks: { color: tickColor, font: { size: 11 } }, beginAtZero: true },
-            },
-        },
-    });
-}
-
 // Update donut when stats change
 watch([onlineCount, offlineCount, activeAlerts], () => {
     if (statusChart) {
@@ -287,7 +267,6 @@ onMounted(async () => {
     await nextTick();
     buildActivityChart();
     buildStatusChart();
-    buildZoneChart();
     refreshTimer = setInterval(() => {
         router.reload({ only: ['devices', 'stats'] });
     }, 30000);
@@ -297,7 +276,6 @@ onUnmounted(() => {
     if (refreshTimer) clearInterval(refreshTimer);
     activityChart?.destroy();
     statusChart?.destroy();
-    zoneChart?.destroy();
 });
 </script>
 
@@ -389,17 +367,118 @@ onUnmounted(() => {
                 </div>
             </div>
         </section>
-        <!-- Zone Alerts -->
-        <section class="mt-4 rounded-lg border border-white/[0.06] bg-slate-900/60 p-4 shadow-[0_1px_2px_rgba(0,0,0,0.4)]">
-            <div class="flex items-center justify-between">
+        <!-- Device Issues Table -->
+        <section class="mt-4 rounded-lg border border-white/[0.06] bg-slate-900/60 shadow-[0_1px_2px_rgba(0,0,0,0.4)]">
+            <!-- Header -->
+            <div class="flex items-center justify-between border-b border-white/[0.06] px-4 py-3">
                 <div>
-                    <h3 class="text-[15px] font-semibold text-slate-100">Zone Alerts</h3>
-                    <p class="text-[12px] text-slate-500">Alerts per detection zone, last 24h</p>
+                    <h3 class="text-[15px] font-semibold text-slate-100">Device Issues</h3>
+                    <p class="text-[12px] text-slate-500">Devices with active problems — click category to filter</p>
                 </div>
-                <div class="text-[12px] text-slate-500">Total <span class="tabular-nums font-medium text-slate-300">{{ totalAlerts }}</span> alerts</div>
+                <span class="tabular-nums text-[12px] text-slate-500">
+                    <span class="font-medium text-slate-300">{{ filteredDevices.length }}</span> device{{ filteredDevices.length !== 1 ? 's' : '' }}
+                </span>
             </div>
-            <div class="mt-3 h-[240px]">
-                <canvas ref="zoneCanvas"></canvas>
+
+            <!-- Category filter tabs -->
+            <div class="flex flex-wrap gap-1.5 border-b border-white/[0.06] px-4 py-2.5">
+                <button
+                    @click="activeCategory = null"
+                    :class="[
+                        'rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors',
+                        activeCategory === null
+                            ? 'bg-slate-700 text-slate-100 ring-1 ring-white/10'
+                            : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
+                    ]"
+                >All Issues</button>
+                <button
+                    v-for="cat in statusCategories"
+                    :key="cat.label"
+                    @click="activeCategory = activeCategory === cat.label ? null : cat.label"
+                    :class="[
+                        'flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors',
+                        activeCategory === cat.label
+                            ? 'bg-slate-700 text-slate-100 ring-1 ring-white/10'
+                            : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
+                    ]"
+                >
+                    <span :class="[cat.dot, 'h-1.5 w-1.5 rounded-full']"></span>
+                    {{ cat.label }}
+                    <span v-if="cat.count > 0" class="rounded px-1 text-[10px]" :style="{ background: cat.color + '22', color: cat.color }">{{ cat.count }}</span>
+                </button>
+            </div>
+
+            <!-- Table -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-[13px]">
+                    <thead>
+                        <tr class="border-b border-white/[0.04] text-[11px] uppercase tracking-wider text-slate-500">
+                            <th class="px-4 py-2.5 text-left font-medium">Device</th>
+                            <th class="px-4 py-2.5 text-left font-medium">IP Address</th>
+                            <th class="px-4 py-2.5 text-left font-medium">Status</th>
+                            <th class="px-4 py-2.5 text-center font-medium">Video Loss</th>
+                            <th class="px-4 py-2.5 text-center font-medium">Storage</th>
+                            <th class="px-4 py-2.5 text-center font-medium">Alerts</th>
+                            <th class="px-4 py-2.5 text-left font-medium">Channels</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-if="filteredDevices.length === 0">
+                            <td colspan="7" class="px-4 py-8 text-center text-slate-500">
+                                <svg class="mx-auto mb-2 h-8 w-8 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                No issues detected
+                            </td>
+                        </tr>
+                        <tr
+                            v-for="device in filteredDevices"
+                            :key="device.id"
+                            class="border-b border-white/[0.03] transition-colors hover:bg-slate-800/30"
+                        >
+                            <td class="px-4 py-3">
+                                <Link :href="route('devices.show', device.id)" class="font-medium text-slate-200 hover:text-cyan-400 transition-colors">
+                                    {{ device.name }}
+                                </Link>
+                            </td>
+                            <td class="px-4 py-3 font-mono text-slate-400">{{ device.ip_address }}</td>
+                            <td class="px-4 py-3">
+                                <span :class="[
+                                    'inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium',
+                                    device.status === 'online'  ? 'bg-emerald-500/15 text-emerald-400' :
+                                    device.status === 'offline' ? 'bg-red-500/15 text-red-400' :
+                                                                  'bg-slate-500/15 text-slate-400'
+                                ]">
+                                    <span :class="[
+                                        'h-1.5 w-1.5 rounded-full',
+                                        device.status === 'online'  ? 'bg-emerald-400' :
+                                        device.status === 'offline' ? 'bg-red-400' : 'bg-slate-400'
+                                    ]"></span>
+                                    {{ device.status }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <span v-if="(device.no_video_count ?? 0) > 0" class="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-400">
+                                    {{ device.no_video_count }} ch
+                                </span>
+                                <span v-else class="text-slate-600">—</span>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <span v-if="(device.fault_storage_count ?? 0) > 0" class="inline-flex items-center gap-1 rounded-full bg-indigo-500/15 px-2 py-0.5 text-[11px] font-semibold text-indigo-400">
+                                    {{ device.fault_storage_count }} fault
+                                </span>
+                                <span v-else class="text-slate-600">—</span>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <span v-if="(device.active_alerts_count ?? 0) > 0" class="inline-flex items-center gap-1 rounded-full bg-cyan-500/15 px-2 py-0.5 text-[11px] font-semibold text-cyan-400">
+                                    {{ device.active_alerts_count }}
+                                </span>
+                                <span v-else class="text-slate-600">—</span>
+                            </td>
+                            <td class="px-4 py-3 text-slate-400">{{ device.channels_count ?? 0 }} ch</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </section>
         <div class="mt-4 text-center text-[11px] text-slate-600">
