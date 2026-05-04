@@ -458,9 +458,9 @@ onUnmounted(() => {
                             class="border-b border-white/[0.03] transition-colors hover:bg-slate-800/30"
                         >
                             <td class="px-4 py-3">
-                                <Link :href="route('devices.show', device.id)" class="font-medium text-slate-200 hover:text-cyan-400 transition-colors">
+                                <a :href="route('devices.show', device.id)" target="_blank" class="font-medium text-slate-200 hover:text-cyan-400 transition-colors">
                                     {{ device.name }}
-                                </Link>
+                                </a>
                             </td>
                             <td class="px-4 py-3 font-mono text-slate-400">{{ device.ip_address }}</td>
                             <td class="px-4 py-3">
