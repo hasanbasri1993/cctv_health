@@ -14,6 +14,7 @@ const colorMap = {
     fault: 'bg-red-500',
     warning: 'bg-yellow-400',
     no_video: 'bg-yellow-400',
+    disabled: 'bg-orange-400',
     unknown: 'bg-gray-400',
 };
 
@@ -25,6 +26,7 @@ const labelMap = {
     fault: 'Fault',
     warning: 'Warning',
     no_video: 'No Video',
+    disabled: 'Disabled',
     unknown: 'Unknown',
 };
 

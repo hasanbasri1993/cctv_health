@@ -58,9 +58,9 @@ class PollChannelStatusJob implements ShouldQueue
                     'last_status_change' => now(),
                 ]);
 
-                if ($newStatus !== 'ok') {
+                if ($newStatus === 'no_video') {
                     $alertService->createChannelAlert($channel->fresh(), $newStatus);
-                } else {
+                } elseif (in_array($newStatus, ['ok', 'disabled'])) {
                     $alertService->resolveChannelAlerts($channel->fresh());
                 }
             }

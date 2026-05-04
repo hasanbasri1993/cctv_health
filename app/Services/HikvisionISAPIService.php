@@ -234,7 +234,7 @@ class HikvisionISAPIService implements HikvisionISAPIServiceInterface
                 $channels[] = [
                     'channel_number' => (int) $ch->id,
                     'name' => (string) ($ch->name ?? ''),
-                    'status' => ($enabled && ! $noVideo) ? 'ok' : 'no_video',
+                    'status' => ! $enabled ? 'disabled' : (! $noVideo ? 'ok' : 'no_video'),
                     'signal_quality' => null,
                 ];
             }
