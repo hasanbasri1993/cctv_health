@@ -28,11 +28,14 @@ class PollDeviceHealthJob implements ShouldQueue
 
         $response = $isapi->getDeviceHealth($this->device);
 
+        $temperature = $this->device->storages()->value('temperature');
+
         DeviceHealthLog::create([
             'device_id' => $this->device->id,
             'status' => $response->success ? $response->status : 'offline',
             'response_time_ms' => $response->responseTimeMs,
             'error_message' => $response->error,
+            'temperature' => $temperature,
         ]);
 
         $previousStatus = $this->device->status;

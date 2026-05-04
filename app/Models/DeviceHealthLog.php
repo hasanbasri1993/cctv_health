@@ -8,11 +8,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class DeviceHealthLog extends Model
 {
     protected $fillable = [
-        'device_id', 'status', 'response_time_ms', 'error_message',
+        'device_id', 'status', 'response_time_ms', 'error_message', 'temperature',
     ];
 
     protected $casts = [
         'response_time_ms' => 'integer',
+        'temperature' => 'integer',
     ];
 
     public function device(): BelongsTo
