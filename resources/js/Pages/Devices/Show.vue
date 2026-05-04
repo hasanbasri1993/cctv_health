@@ -14,7 +14,7 @@ const props = defineProps({
     channels: { type: Array, default: () => [] },
     storages: { type: Array, default: () => [] },
     alerts: { type: Array, default: () => [] },
-    healthLogs: { type: Object, default: () => ({ data: [], links: [], meta: {} }) },
+    healthLogs: { type: Object, default: () => ({ data: [], links: [], last_page: 1, from: null, to: null, total: 0 }) },
 });
 
 const testingConnection = ref(false);
@@ -272,9 +272,9 @@ const severityClasses = {
                             </tbody>
                         </table>
                         <!-- Pagination -->
-                        <div v-if="healthLogs.meta.last_page > 1" class="flex items-center justify-between border-t border-gray-100 px-6 py-3">
+                        <div v-if="healthLogs.last_page > 1" class="flex items-center justify-between border-t border-gray-100 px-6 py-3">
                             <p class="text-xs text-gray-500">
-                                Showing {{ healthLogs.meta.from }}–{{ healthLogs.meta.to }} of {{ healthLogs.meta.total }}
+                                Showing {{ healthLogs.from }}–{{ healthLogs.to }} of {{ healthLogs.total }}
                             </p>
                             <div class="flex gap-1">
                                 <Link
