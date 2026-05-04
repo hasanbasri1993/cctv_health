@@ -326,12 +326,16 @@ class HikvisionISAPIService implements HikvisionISAPIServiceInterface
             $doc = new \SimpleXMLElement($xml);
             $ns = 'http://www.hikvision.com/ver20/XMLSchema';
 
-            $children = $doc->children($ns);
-            $diskStatus = (string) ($children->diskStatus ?? $doc->diskStatus ?? '');
-            $tempRaw = (string) ($children->temperature ?? $doc->temperature ?? '');
+            $ch = $doc->children($ns);
+
+            // allEvaluaingStatus is the overall health field in SmartTestStatus
+            $status = (string) ($ch->allEvaluaingStatus ?? $ch->selfEvaluaingStatus ?? '');
+
+            // Hikvision firmware typo: "temprature" (missing 'e')
+            $tempRaw = (string) ($ch->temprature ?? $ch->temperature ?? '');
 
             return [
-                'health_status' => $this->mapStorageHealth($diskStatus ?: 'unknown'),
+                'health_status' => $this->mapStorageHealth($status ?: 'unknown'),
                 'temperature' => $tempRaw !== '' ? (int) $tempRaw : null,
             ];
         } catch (\Exception $e) {
@@ -344,7 +348,7 @@ class HikvisionISAPIService implements HikvisionISAPIServiceInterface
     private function mapStorageHealth(string $status): string
     {
         return match (strtoupper($status)) {
-            'OK', 'NORMAL' => 'healthy',
+            'OK', 'NORMAL', 'FUNCTIONAL' => 'healthy',
             'UNFORMATTED' => 'unformatted',
             'FORMATTING' => 'formatting',
             'NOTEXIST', 'NONE' => 'empty',
