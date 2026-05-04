@@ -36,7 +36,7 @@ function clearFilters() {
 }
 
 function acknowledgeAlert(alert) {
-    router.patch(`/alerts/${alert.id}/acknowledge`, {}, { preserveScroll: true });
+    router.post(`/alerts/${alert.id}/acknowledge`, {}, { preserveScroll: true });
 }
 
 function exportCsv() {
@@ -53,25 +53,32 @@ function formatDateTime(dateStr) {
     return new Date(dateStr).toLocaleString();
 }
 
-const severityClasses = {
-    critical: 'bg-red-100 text-red-700 ring-red-200',
-    high: 'bg-orange-100 text-orange-700 ring-orange-200',
-    medium: 'bg-yellow-100 text-yellow-700 ring-yellow-200',
-    low: 'bg-blue-100 text-blue-700 ring-blue-200',
-    info: 'bg-gray-100 text-gray-600 ring-gray-200',
+const severityBadge = {
+    critical: 'bg-red-500/15 text-red-400 ring-1 ring-red-500/30',
+    high: 'bg-orange-500/15 text-orange-400 ring-1 ring-orange-500/30',
+    medium: 'bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/30',
+    low: 'bg-blue-500/15 text-blue-400 ring-1 ring-blue-500/30',
+    info: 'bg-slate-700/60 text-slate-400',
 };
 
-const statusClasses = {
-    active: 'bg-red-50 text-red-700',
-    acknowledged: 'bg-yellow-50 text-yellow-700',
-    resolved: 'bg-green-50 text-green-700',
+const statusBadge = {
+    active: 'bg-red-500/15 text-red-400',
+    acknowledged: 'bg-amber-500/15 text-amber-400',
+    resolved: 'bg-emerald-500/15 text-emerald-400',
 };
 
 const alertsList = computed(() =>
-    Array.isArray(props.alerts) ? props.alerts : (props.alerts?.data ?? [])
+    Array.isArray(props.alerts) ? props.alerts : (props.alerts?.data ?? []),
 );
 const paginationLinks = computed(() =>
-    Array.isArray(props.alerts) ? [] : (props.alerts?.links ?? [])
+    Array.isArray(props.alerts) ? [] : (props.alerts?.links ?? []),
+);
+const paginationMeta = computed(() =>
+    Array.isArray(props.alerts) ? {} : (props.alerts?.meta ?? props.alerts ?? {}),
+);
+
+const activeFiltersCount = computed(() =>
+    [filterForm.status, filterForm.severity, filterForm.device_id].filter(Boolean).length,
 );
 </script>
 
@@ -81,11 +88,19 @@ const paginationLinks = computed(() =>
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center justify-between">
-                <h2 class="text-xl font-semibold leading-tight text-gray-800">Alert Center</h2>
+                <div>
+                    <h2 class="text-[17px] font-semibold text-slate-100">Alert Center</h2>
+                    <p class="text-[13px] text-slate-500">
+                        {{ alertsList.length }} alert{{ alertsList.length !== 1 ? 's' : '' }}
+                        <template v-if="activeFiltersCount > 0">
+                            · <span class="text-cyan-400">{{ activeFiltersCount }} filter{{ activeFiltersCount !== 1 ? 's' : '' }} active</span>
+                        </template>
+                    </p>
+                </div>
                 <button
                     type="button"
                     @click="exportCsv"
-                    class="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+                    class="inline-flex items-center gap-1.5 rounded-md border border-white/[0.08] bg-slate-800/60 px-3 py-2 text-[13px] font-medium text-slate-300 transition-colors hover:bg-slate-700/60"
                 >
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -95,164 +110,157 @@ const paginationLinks = computed(() =>
             </div>
         </template>
 
-        <div class="py-8">
-            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-6">
-
-                <!-- Filters -->
-                <div class="rounded-lg bg-white p-5 shadow-sm">
-                    <h3 class="mb-4 text-sm font-semibold text-gray-700">Filters</h3>
-                    <div class="flex flex-wrap items-end gap-4">
-                        <!-- Status -->
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Status</label>
-                            <select
-                                v-model="filterForm.status"
-                                class="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                            >
-                                <option value="">All</option>
-                                <option value="active">Active</option>
-                                <option value="acknowledged">Acknowledged</option>
-                                <option value="resolved">Resolved</option>
-                            </select>
-                        </div>
-
-                        <!-- Severity -->
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Severity</label>
-                            <select
-                                v-model="filterForm.severity"
-                                class="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                            >
-                                <option value="">All</option>
-                                <option value="critical">Critical</option>
-                                <option value="high">High</option>
-                                <option value="medium">Medium</option>
-                                <option value="low">Low</option>
-                                <option value="info">Info</option>
-                            </select>
-                        </div>
-
-                        <!-- Actions -->
-                        <div class="flex items-center gap-2">
-                            <button
-                                type="button"
-                                @click="applyFilters"
-                                class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
-                            >
-                                Apply
-                            </button>
-                            <button
-                                type="button"
-                                @click="clearFilters"
-                                class="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                            >
-                                Clear
-                            </button>
-                        </div>
-                    </div>
+        <!-- Filters -->
+        <div class="rounded-lg border border-white/[0.06] bg-slate-900/60 px-5 py-4 shadow-[0_1px_2px_rgba(0,0,0,0.4)]">
+            <div class="flex flex-wrap items-end gap-3">
+                <div>
+                    <label class="mb-1 block text-[11px] font-medium uppercase tracking-wider text-slate-500">Status</label>
+                    <select
+                        v-model="filterForm.status"
+                        class="rounded-md border border-white/[0.08] bg-slate-800/60 px-3 py-2 text-[13px] text-slate-300 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/30"
+                    >
+                        <option value="">All</option>
+                        <option value="active">Active</option>
+                        <option value="acknowledged">Acknowledged</option>
+                        <option value="resolved">Resolved</option>
+                    </select>
                 </div>
 
-                <!-- Table -->
-                <div class="overflow-hidden rounded-lg bg-white shadow">
-                    <div v-if="alertsList.length === 0" class="p-12 text-center">
-                        <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                        </svg>
-                        <p class="mt-3 text-sm text-gray-500">No alerts found.</p>
-                    </div>
+                <div>
+                    <label class="mb-1 block text-[11px] font-medium uppercase tracking-wider text-slate-500">Severity</label>
+                    <select
+                        v-model="filterForm.severity"
+                        class="rounded-md border border-white/[0.08] bg-slate-800/60 px-3 py-2 text-[13px] text-slate-300 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/30"
+                    >
+                        <option value="">All</option>
+                        <option value="critical">Critical</option>
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                        <option value="info">Info</option>
+                    </select>
+                </div>
 
-                    <div v-else class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Title</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Severity</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Device</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Status</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Created</th>
-                                    <th class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100 bg-white">
-                                <tr v-for="alert in alertsList" :key="alert.id" class="hover:bg-gray-50">
-                                    <td class="px-6 py-4">
-                                        <p class="text-sm font-medium text-gray-900">{{ alert.title }}</p>
-                                        <p v-if="alert.message" class="mt-0.5 text-xs text-gray-500 line-clamp-1">{{ alert.message }}</p>
-                                    </td>
-                                    <td class="whitespace-nowrap px-6 py-4">
-                                        <span
-                                            :class="severityClasses[alert.severity] ?? 'bg-gray-100 text-gray-600 ring-gray-200'"
-                                            class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ring-1 ring-inset"
-                                        >
-                                            {{ alert.severity }}
-                                        </span>
-                                    </td>
-                                    <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-                                        <Link
-                                            v-if="alert.device"
-                                            :href="`/devices/${alert.device.id}`"
-                                            class="hover:text-indigo-600"
-                                        >
-                                            {{ alert.device.name }}
-                                        </Link>
-                                        <span v-else>—</span>
-                                    </td>
-                                    <td class="whitespace-nowrap px-6 py-4">
-                                        <span
-                                            :class="statusClasses[alert.status] ?? 'bg-gray-50 text-gray-600'"
-                                            class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium capitalize"
-                                        >
-                                            {{ alert.status }}
-                                        </span>
-                                    </td>
-                                    <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-                                        {{ formatDateTime(alert.created_at) }}
-                                    </td>
-                                    <td class="whitespace-nowrap px-6 py-4 text-right text-sm">
-                                        <button
-                                            v-if="alert.status === 'active'"
-                                            type="button"
-                                            @click="acknowledgeAlert(alert)"
-                                            class="text-indigo-600 hover:text-indigo-500 font-medium"
-                                        >
-                                            Acknowledge
-                                        </button>
-                                        <span v-else class="text-gray-400">—</span>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="flex items-center gap-2 pb-0.5">
+                    <button
+                        type="button"
+                        @click="applyFilters"
+                        class="rounded-md bg-cyan-600 px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-cyan-500"
+                    >
+                        Apply
+                    </button>
+                    <button
+                        v-if="activeFiltersCount > 0"
+                        type="button"
+                        @click="clearFilters"
+                        class="rounded-md border border-white/[0.08] px-4 py-2 text-[13px] font-medium text-slate-400 transition-colors hover:bg-slate-800/60 hover:text-slate-200"
+                    >
+                        Clear
+                    </button>
+                </div>
+            </div>
+        </div>
 
-                    <!-- Pagination -->
-                    <div v-if="paginationLinks.length > 3" class="flex items-center justify-between border-t border-gray-200 px-6 py-4">
-                        <p class="text-sm text-gray-600">
-                            Showing {{ alerts?.meta?.from ?? '—' }}–{{ alerts?.meta?.to ?? '—' }} of {{ alerts?.meta?.total ?? '—' }}
-                        </p>
-                        <div class="flex gap-1">
-                            <template v-for="link in paginationLinks" :key="link.label">
-                                <Link
-                                    v-if="link.url"
-                                    :href="link.url"
-                                    preserve-scroll
-                                    :class="[
-                                        link.active
-                                            ? 'bg-indigo-600 text-white border-indigo-600'
-                                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50',
-                                        'inline-flex items-center rounded border px-3 py-1.5 text-sm font-medium'
-                                    ]"
-                                    v-html="link.label"
-                                />
+        <!-- Table -->
+        <div class="mt-3 rounded-lg border border-white/[0.06] bg-slate-900/60 shadow-[0_1px_2px_rgba(0,0,0,0.4)]">
+            <!-- Empty -->
+            <div v-if="alertsList.length === 0" class="py-16 text-center">
+                <svg class="mx-auto h-10 w-10 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                <p class="mt-3 text-[13px] text-slate-500">No alerts found.</p>
+                <button v-if="activeFiltersCount > 0" type="button" @click="clearFilters" class="mt-2 text-[13px] text-cyan-400 hover:text-cyan-300">
+                    Clear filters
+                </button>
+            </div>
+
+            <div v-else class="overflow-x-auto">
+                <table class="min-w-full text-[13px]">
+                    <thead>
+                        <tr class="border-b border-white/[0.06] text-left text-[11px] uppercase tracking-wider text-slate-500">
+                            <th class="px-5 py-3 font-medium">Title</th>
+                            <th class="px-5 py-3 font-medium">Severity</th>
+                            <th class="px-5 py-3 font-medium">Device</th>
+                            <th class="px-5 py-3 font-medium">Status</th>
+                            <th class="px-5 py-3 font-medium">Created</th>
+                            <th class="px-5 py-3 text-right font-medium">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/[0.04]">
+                        <tr v-for="alert in alertsList" :key="alert.id" class="hover:bg-slate-800/40">
+                            <td class="px-5 py-3">
+                                <p class="font-medium text-slate-200">{{ alert.title }}</p>
+                                <p v-if="alert.message" class="mt-0.5 line-clamp-1 text-[12px] text-slate-500">{{ alert.message }}</p>
+                            </td>
+                            <td class="whitespace-nowrap px-5 py-3">
                                 <span
-                                    v-else
-                                    class="inline-flex items-center rounded border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-gray-400"
-                                    v-html="link.label"
-                                />
-                            </template>
-                        </div>
-                    </div>
-                </div>
+                                    :class="severityBadge[alert.severity] ?? 'bg-slate-700/60 text-slate-400'"
+                                    class="inline-flex rounded px-1.5 py-0.5 text-[11px] font-medium capitalize"
+                                >
+                                    {{ alert.severity }}
+                                </span>
+                            </td>
+                            <td class="whitespace-nowrap px-5 py-3">
+                                <Link
+                                    v-if="alert.device"
+                                    :href="`/devices/${alert.device.id}`"
+                                    class="text-slate-300 hover:text-cyan-400"
+                                >
+                                    {{ alert.device.name }}
+                                </Link>
+                                <span v-else class="text-slate-500">—</span>
+                            </td>
+                            <td class="whitespace-nowrap px-5 py-3">
+                                <span
+                                    :class="statusBadge[alert.status] ?? 'bg-slate-700/60 text-slate-400'"
+                                    class="inline-flex rounded px-1.5 py-0.5 text-[11px] font-medium capitalize"
+                                >
+                                    {{ alert.status }}
+                                </span>
+                            </td>
+                            <td class="whitespace-nowrap px-5 py-3 tabular-nums text-slate-500">{{ formatDateTime(alert.created_at) }}</td>
+                            <td class="whitespace-nowrap px-5 py-3 text-right">
+                                <button
+                                    v-if="alert.status === 'active'"
+                                    type="button"
+                                    @click="acknowledgeAlert(alert)"
+                                    class="text-[12px] font-medium text-cyan-400 hover:text-cyan-300"
+                                >
+                                    Acknowledge
+                                </button>
+                                <span v-else class="text-slate-600">—</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
+            <!-- Pagination -->
+            <div v-if="paginationLinks.length > 3" class="flex items-center justify-between border-t border-white/[0.06] px-5 py-3">
+                <p class="text-[12px] text-slate-500">
+                    Showing {{ paginationMeta.from ?? '—' }}–{{ paginationMeta.to ?? '—' }} of {{ paginationMeta.total ?? '—' }}
+                </p>
+                <div class="flex gap-1">
+                    <template v-for="link in paginationLinks" :key="link.label">
+                        <Link
+                            v-if="link.url"
+                            :href="link.url"
+                            preserve-scroll
+                            :class="[
+                                'inline-flex items-center rounded border px-2.5 py-1 text-[12px] font-medium transition-colors',
+                                link.active
+                                    ? 'border-cyan-500/50 bg-cyan-600/20 text-cyan-300'
+                                    : 'border-white/[0.08] text-slate-400 hover:bg-slate-800/60 hover:text-slate-200',
+                            ]"
+                            v-html="link.label"
+                        />
+                        <span
+                            v-else
+                            class="inline-flex items-center rounded border border-white/[0.06] bg-slate-800/30 px-2.5 py-1 text-[12px] text-slate-600"
+                            v-html="link.label"
+                        />
+                    </template>
+                </div>
             </div>
         </div>
     </AuthenticatedLayout>

@@ -1,10 +1,7 @@
 <script setup>
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head } from '@inertiajs/vue3';
+import { useForm } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import TextInput from '@/Components/TextInput.vue';
-import InputError from '@/Components/InputError.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
 
 const props = defineProps({ config: Object });
 
@@ -29,84 +26,160 @@ function submit() {
 
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="text-xl font-semibold leading-tight text-gray-800">System Configuration</h2>
+            <div>
+                <h2 class="text-[17px] font-semibold text-slate-100">System Configuration</h2>
+                <p class="text-[13px] text-slate-500">Polling intervals and notification settings</p>
+            </div>
         </template>
 
-        <div class="py-8">
-            <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 space-y-6">
+        <div class="mx-auto max-w-3xl">
+            <form @submit.prevent="submit" class="space-y-4">
 
-                <form @submit.prevent="submit" class="space-y-6">
-
-                    <!-- Polling Intervals -->
-                    <div class="rounded-lg bg-white p-6 shadow-sm">
-                        <h3 class="mb-4 text-base font-semibold text-gray-900">Polling Intervals (minutes)</h3>
-                        <div class="grid grid-cols-3 gap-4">
+                <!-- Polling Intervals -->
+                <div class="rounded-lg border border-white/[0.06] bg-slate-900/60 shadow-[0_1px_2px_rgba(0,0,0,0.4)]">
+                    <div class="border-b border-white/[0.06] px-5 py-3">
+                        <h3 class="text-[15px] font-semibold text-slate-100">Polling Intervals</h3>
+                        <p class="text-[12px] text-slate-500">How often background jobs query each device (minutes)</p>
+                    </div>
+                    <div class="p-5 space-y-5">
+                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
                             <div>
-                                <InputLabel for="ch_interval" value="Channel Status" />
-                                <TextInput id="ch_interval" v-model.number="form.polling_channel_interval" type="number" min="1" max="60" class="mt-1 block w-full" />
-                                <InputError :message="form.errors.polling_channel_interval" class="mt-1" />
+                                <label for="ch_interval" class="block text-[13px] font-medium text-slate-300">Channel Status</label>
+                                <input
+                                    id="ch_interval"
+                                    v-model.number="form.polling_channel_interval"
+                                    type="number" min="1" max="60"
+                                    class="mt-1.5 block w-full rounded-md border border-white/[0.08] bg-slate-800/60 px-3 py-2 text-[13px] text-slate-100 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/30"
+                                />
+                                <p v-if="form.errors.polling_channel_interval" class="mt-1 text-[12px] text-red-400">{{ form.errors.polling_channel_interval }}</p>
                             </div>
                             <div>
-                                <InputLabel for="dev_interval" value="Device Health" />
-                                <TextInput id="dev_interval" v-model.number="form.polling_device_interval" type="number" min="1" max="60" class="mt-1 block w-full" />
-                                <InputError :message="form.errors.polling_device_interval" class="mt-1" />
+                                <label for="dev_interval" class="block text-[13px] font-medium text-slate-300">Device Health</label>
+                                <input
+                                    id="dev_interval"
+                                    v-model.number="form.polling_device_interval"
+                                    type="number" min="1" max="60"
+                                    class="mt-1.5 block w-full rounded-md border border-white/[0.08] bg-slate-800/60 px-3 py-2 text-[13px] text-slate-100 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/30"
+                                />
+                                <p v-if="form.errors.polling_device_interval" class="mt-1 text-[12px] text-red-400">{{ form.errors.polling_device_interval }}</p>
                             </div>
                             <div>
-                                <InputLabel for="st_interval" value="Storage Status" />
-                                <TextInput id="st_interval" v-model.number="form.polling_storage_interval" type="number" min="1" max="60" class="mt-1 block w-full" />
-                                <InputError :message="form.errors.polling_storage_interval" class="mt-1" />
+                                <label for="st_interval" class="block text-[13px] font-medium text-slate-300">Storage Status</label>
+                                <input
+                                    id="st_interval"
+                                    v-model.number="form.polling_storage_interval"
+                                    type="number" min="1" max="60"
+                                    class="mt-1.5 block w-full rounded-md border border-white/[0.08] bg-slate-800/60 px-3 py-2 text-[13px] text-slate-100 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/30"
+                                />
+                                <p v-if="form.errors.polling_storage_interval" class="mt-1 text-[12px] text-red-400">{{ form.errors.polling_storage_interval }}</p>
                             </div>
                         </div>
-                        <div class="mt-4">
-                            <InputLabel for="reminder_interval" value="Notification Reminder Interval (minutes)" />
-                            <TextInput id="reminder_interval" v-model.number="form.notification_reminder_interval" type="number" min="5" max="1440" class="mt-1 block w-48" />
-                            <InputError :message="form.errors.notification_reminder_interval" class="mt-1" />
-                            <p class="mt-1 text-xs text-gray-500">How often to resend notifications for unresolved alerts.</p>
+
+                        <div>
+                            <label for="reminder_interval" class="block text-[13px] font-medium text-slate-300">Notification Reminder Interval (minutes)</label>
+                            <input
+                                id="reminder_interval"
+                                v-model.number="form.notification_reminder_interval"
+                                type="number" min="5" max="1440"
+                                class="mt-1.5 block w-40 rounded-md border border-white/[0.08] bg-slate-800/60 px-3 py-2 text-[13px] text-slate-100 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/30"
+                            />
+                            <p class="mt-1 text-[12px] text-slate-500">How often to resend notifications for unresolved alerts.</p>
+                            <p v-if="form.errors.notification_reminder_interval" class="mt-1 text-[12px] text-red-400">{{ form.errors.notification_reminder_interval }}</p>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Telegram -->
-                    <div class="rounded-lg bg-white p-6 shadow-sm">
-                        <h3 class="mb-4 text-base font-semibold text-gray-900">Telegram Notifications</h3>
-                        <div class="space-y-4">
-                            <div>
-                                <InputLabel for="tg_token" value="Bot Token" />
-                                <TextInput id="tg_token" v-model="form.telegram_bot_token" type="password" class="mt-1 block w-full font-mono" :placeholder="config.telegram_bot_token === '***configured***' ? 'Leave blank to keep current' : 'Enter bot token'" autocomplete="off" />
-                                <InputError :message="form.errors.telegram_bot_token" class="mt-1" />
+                <!-- Telegram -->
+                <div class="rounded-lg border border-white/[0.06] bg-slate-900/60 shadow-[0_1px_2px_rgba(0,0,0,0.4)]">
+                    <div class="border-b border-white/[0.06] px-5 py-3">
+                        <h3 class="text-[15px] font-semibold text-slate-100">Telegram Notifications</h3>
+                        <p class="text-[12px] text-slate-500">Alerts sent via Telegram bot</p>
+                    </div>
+                    <div class="space-y-4 p-5">
+                        <div>
+                            <label for="tg_token" class="block text-[13px] font-medium text-slate-300">Bot Token</label>
+                            <input
+                                id="tg_token"
+                                v-model="form.telegram_bot_token"
+                                type="password"
+                                autocomplete="off"
+                                :placeholder="config.telegram_bot_token === '***configured***' ? 'Leave blank to keep current' : 'Enter bot token'"
+                                class="mt-1.5 block w-full rounded-md border border-white/[0.08] bg-slate-800/60 px-3 py-2 font-mono text-[13px] text-slate-100 placeholder-slate-600 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/30"
+                            />
+                            <div v-if="config.telegram_bot_token === '***configured***'" class="mt-1 flex items-center gap-1.5">
+                                <span class="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                                <span class="text-[12px] text-emerald-400">Token configured</span>
                             </div>
-                            <div>
-                                <InputLabel for="tg_chat" value="Chat ID" />
-                                <TextInput id="tg_chat" v-model="form.telegram_chat_id" type="text" class="mt-1 block w-full" placeholder="-100123456789" />
-                                <InputError :message="form.errors.telegram_chat_id" class="mt-1" />
-                            </div>
+                            <p v-if="form.errors.telegram_bot_token" class="mt-1 text-[12px] text-red-400">{{ form.errors.telegram_bot_token }}</p>
+                        </div>
+                        <div>
+                            <label for="tg_chat" class="block text-[13px] font-medium text-slate-300">Chat ID</label>
+                            <input
+                                id="tg_chat"
+                                v-model="form.telegram_chat_id"
+                                type="text"
+                                placeholder="-100123456789"
+                                class="mt-1.5 block w-full rounded-md border border-white/[0.08] bg-slate-800/60 px-3 py-2 font-mono text-[13px] text-slate-100 placeholder-slate-500 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/30"
+                            />
+                            <p v-if="form.errors.telegram_chat_id" class="mt-1 text-[12px] text-red-400">{{ form.errors.telegram_chat_id }}</p>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Email -->
-                    <div class="rounded-lg bg-white p-6 shadow-sm">
-                        <h3 class="mb-4 text-base font-semibold text-gray-900">Email Notifications</h3>
-                        <div class="space-y-4">
-                            <div>
-                                <InputLabel for="mail_from" value="From Address" />
-                                <TextInput id="mail_from" v-model="form.mail_from_address" type="email" class="mt-1 block w-full" />
-                                <InputError :message="form.errors.mail_from_address" class="mt-1" />
-                            </div>
-                            <div>
-                                <InputLabel for="recipients" value="Alert Recipients (comma-separated)" />
-                                <TextInput id="recipients" v-model="form.alert_email_recipients" type="text" class="mt-1 block w-full" placeholder="ops@example.com,admin@example.com" />
-                                <InputError :message="form.errors.alert_email_recipients" class="mt-1" />
-                            </div>
+                <!-- Email -->
+                <div class="rounded-lg border border-white/[0.06] bg-slate-900/60 shadow-[0_1px_2px_rgba(0,0,0,0.4)]">
+                    <div class="border-b border-white/[0.06] px-5 py-3">
+                        <h3 class="text-[15px] font-semibold text-slate-100">Email Notifications</h3>
+                        <p class="text-[12px] text-slate-500">Alert recipients via SMTP</p>
+                    </div>
+                    <div class="space-y-4 p-5">
+                        <div>
+                            <label for="mail_from" class="block text-[13px] font-medium text-slate-300">From Address</label>
+                            <input
+                                id="mail_from"
+                                v-model="form.mail_from_address"
+                                type="email"
+                                class="mt-1.5 block w-full rounded-md border border-white/[0.08] bg-slate-800/60 px-3 py-2 text-[13px] text-slate-100 placeholder-slate-500 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/30"
+                            />
+                            <p v-if="form.errors.mail_from_address" class="mt-1 text-[12px] text-red-400">{{ form.errors.mail_from_address }}</p>
+                        </div>
+                        <div>
+                            <label for="recipients" class="block text-[13px] font-medium text-slate-300">Alert Recipients</label>
+                            <input
+                                id="recipients"
+                                v-model="form.alert_email_recipients"
+                                type="text"
+                                placeholder="ops@example.com, admin@example.com"
+                                class="mt-1.5 block w-full rounded-md border border-white/[0.08] bg-slate-800/60 px-3 py-2 text-[13px] text-slate-100 placeholder-slate-500 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/30"
+                            />
+                            <p class="mt-1 text-[12px] text-slate-500">Comma-separated email addresses.</p>
+                            <p v-if="form.errors.alert_email_recipients" class="mt-1 text-[12px] text-red-400">{{ form.errors.alert_email_recipients }}</p>
                         </div>
                     </div>
+                </div>
 
-                    <div class="flex justify-end">
-                        <PrimaryButton :disabled="form.processing">
-                            {{ form.processing ? 'Saving...' : 'Save Configuration' }}
-                        </PrimaryButton>
-                    </div>
-                </form>
+                <!-- Actions -->
+                <div class="flex items-center justify-end gap-3 rounded-lg border border-white/[0.06] bg-slate-900/60 px-5 py-4">
+                    <span v-if="form.recentlySuccessful" class="flex items-center gap-1.5 text-[13px] text-emerald-400">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Saved
+                    </span>
+                    <button
+                        type="submit"
+                        :disabled="form.processing"
+                        class="inline-flex items-center gap-2 rounded-md bg-cyan-600 px-5 py-2 text-[13px] font-medium text-white transition-colors hover:bg-cyan-500 disabled:opacity-50"
+                    >
+                        <svg v-if="form.processing" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                        </svg>
+                        {{ form.processing ? 'Saving…' : 'Save Configuration' }}
+                    </button>
+                </div>
 
-            </div>
+            </form>
         </div>
     </AuthenticatedLayout>
 </template>
