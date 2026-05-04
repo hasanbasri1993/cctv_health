@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch, nextTick, Teleport } from 'vue';
 import { usePage, router, Head, Link } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import {
@@ -108,6 +108,17 @@ const filteredDevices = computed(() => {
 const activeCategoryDef = computed(() =>
     activeCategory.value ? statusCategories.value.find(c => c.label === activeCategory.value) : null
 );
+
+// Teleported tooltip
+const tooltip = ref({ visible: false, type: null, device: null, x: 0, y: 0 });
+
+function showTooltip(e, device, type) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    tooltip.value = { visible: true, type, device, x: rect.left + rect.width / 2, y: rect.bottom + 8 };
+}
+function hideTooltip() {
+    tooltip.value = { ...tooltip.value, visible: false };
+}
 
 // TODO: replace with API — recent events feed
 const recentEvents = [
@@ -458,57 +469,21 @@ onUnmounted(() => {
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-center">
-                                <div v-if="(device.no_video_count ?? 0) > 0" class="group relative inline-block">
-                                    <span class="inline-flex cursor-default items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-400">
-                                        {{ device.no_video_count }} ch
-                                    </span>
-                                    <div class="pointer-events-none absolute left-1/2 top-full z-[100] mt-1.5 hidden -translate-x-1/2 group-hover:block">
-                                        <div class="absolute -top-1.5 left-1/2 -translate-x-1/2">
-                                            <div class="h-2 w-2 rotate-45 border-l border-t border-white/[0.08] bg-slate-900"></div>
-                                        </div>
-                                        <div class="min-w-[160px] rounded-md border border-white/[0.08] bg-slate-900 p-2 shadow-xl text-left">
-                                            <p class="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">No Video Channels</p>
-                                            <div v-for="ch in device.channels" :key="ch.id" class="flex items-center gap-2 py-0.5">
-                                                <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400"></span>
-                                                <span class="text-[12px] text-slate-300">
-                                                    CH{{ ch.channel_number }}{{ ch.name ? ' — ' + ch.name : '' }}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                <span
+                                    v-if="(device.no_video_count ?? 0) > 0"
+                                    class="inline-flex cursor-default items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-400"
+                                    @mouseenter="showTooltip($event, device, 'video')"
+                                    @mouseleave="hideTooltip"
+                                >{{ device.no_video_count }} ch</span>
                                 <span v-else class="text-slate-600">—</span>
                             </td>
                             <td class="px-4 py-3 text-center">
-                                <div v-if="(device.fault_storage_count ?? 0) > 0" class="group relative inline-block">
-                                    <span class="inline-flex cursor-default items-center gap-1 rounded-full bg-indigo-500/15 px-2 py-0.5 text-[11px] font-semibold text-indigo-400">
-                                        {{ device.fault_storage_count }} fault
-                                    </span>
-                                    <div class="pointer-events-none absolute left-1/2 top-full z-[100] mt-1.5 hidden -translate-x-1/2 group-hover:block">
-                                        <div class="absolute -top-1.5 left-1/2 -translate-x-1/2">
-                                            <div class="h-2 w-2 rotate-45 border-l border-t border-white/[0.08] bg-slate-900"></div>
-                                        </div>
-                                        <div class="min-w-[180px] rounded-md border border-white/[0.08] bg-slate-900 p-2 shadow-xl text-left">
-                                            <p class="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Storage Issues</p>
-                                            <div v-for="st in device.storages" :key="st.id" class="flex items-center justify-between gap-3 py-0.5">
-                                                <div class="flex items-center gap-2">
-                                                    <span :class="[
-                                                        'h-1.5 w-1.5 shrink-0 rounded-full',
-                                                        st.health_status === 'fault' ? 'bg-red-400' : 'bg-slate-400'
-                                                    ]"></span>
-                                                    <span class="text-[12px] text-slate-300">{{ st.name || 'HDD' }}</span>
-                                                </div>
-                                                <div class="flex items-center gap-2 shrink-0">
-                                                    <span :class="[
-                                                        'rounded px-1 py-px text-[10px] font-medium',
-                                                        st.health_status === 'fault' ? 'bg-red-500/20 text-red-400' : 'bg-slate-600/40 text-slate-400'
-                                                    ]">{{ st.health_status }}</span>
-                                                    <span v-if="st.temperature" class="text-[11px] text-slate-500">{{ st.temperature }}°C</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                <span
+                                    v-if="(device.fault_storage_count ?? 0) > 0"
+                                    class="inline-flex cursor-default items-center gap-1 rounded-full bg-indigo-500/15 px-2 py-0.5 text-[11px] font-semibold text-indigo-400"
+                                    @mouseenter="showTooltip($event, device, 'storage')"
+                                    @mouseleave="hideTooltip"
+                                >{{ device.fault_storage_count }} fault</span>
                                 <span v-else class="text-slate-600">—</span>
                             </td>
                             <td class="px-4 py-3 text-center">
@@ -527,4 +502,40 @@ onUnmounted(() => {
             <p>Early Warning Dashboard • Data refreshes automatically every 30 seconds</p>
         </div>
     </AuthenticatedLayout>
+
+    <!-- Teleported tooltip — renders at body level, escapes all overflow clipping -->
+    <Teleport to="body">
+        <div
+            v-if="tooltip.visible"
+            class="pointer-events-none fixed z-[9999] -translate-x-1/2"
+            :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }"
+        >
+            <!-- arrow -->
+            <div class="mx-auto mb-px flex justify-center">
+                <div class="h-2 w-2 rotate-45 border-l border-t border-white/[0.08] bg-slate-900"></div>
+            </div>
+            <!-- video loss -->
+            <div v-if="tooltip.type === 'video'" class="min-w-[160px] rounded-md border border-white/[0.08] bg-slate-900 p-2 shadow-xl">
+                <p class="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">No Video Channels</p>
+                <div v-for="ch in tooltip.device.channels" :key="ch.id" class="flex items-center gap-2 py-0.5">
+                    <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400"></span>
+                    <span class="text-[12px] text-slate-300">CH{{ ch.channel_number }}{{ ch.name ? ' — ' + ch.name : '' }}</span>
+                </div>
+            </div>
+            <!-- storage -->
+            <div v-if="tooltip.type === 'storage'" class="min-w-[180px] rounded-md border border-white/[0.08] bg-slate-900 p-2 shadow-xl">
+                <p class="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Storage Issues</p>
+                <div v-for="st in tooltip.device.storages" :key="st.id" class="flex items-center justify-between gap-3 py-0.5">
+                    <div class="flex items-center gap-2">
+                        <span :class="['h-1.5 w-1.5 shrink-0 rounded-full', st.health_status === 'fault' ? 'bg-red-400' : 'bg-slate-400']"></span>
+                        <span class="text-[12px] text-slate-300">{{ st.name || 'HDD' }}</span>
+                    </div>
+                    <div class="flex shrink-0 items-center gap-2">
+                        <span :class="['rounded px-1 py-px text-[10px] font-medium', st.health_status === 'fault' ? 'bg-red-500/20 text-red-400' : 'bg-slate-600/40 text-slate-400']">{{ st.health_status }}</span>
+                        <span v-if="st.temperature" class="text-[11px] text-slate-500">{{ st.temperature }}°C</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </Teleport>
 </template>
