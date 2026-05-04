@@ -65,7 +65,7 @@ class AlertController extends Controller
             $query->where('severity', $request->severity);
         }
 
-        $filename = 'alerts-' . now()->format('Y-m-d') . '.csv';
+        $filename = 'alerts-'.now()->format('Y-m-d').'.csv';
 
         return response()->streamDownload(function () use ($query) {
             $handle = fopen('php://output', 'w');

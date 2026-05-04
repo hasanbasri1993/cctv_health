@@ -6,7 +6,6 @@ use App\Models\Alert;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Telegram\Bot\Api as TelegramApi;
-use Telegram\Bot\Exceptions\TelegramSDKException;
 
 class NotificationService
 {
@@ -92,9 +91,9 @@ class NotificationService
         };
 
         return "{$severityEmoji} <b>{$alert->title}</b>\n\n"
-            . "{$alert->message}\n\n"
-            . "Severity: <b>{$alert->severity}</b>\n"
-            . "Time: {$alert->created_at->format('Y-m-d H:i:s')}\n"
-            . "Device: {$alert->device->name}";
+            ."{$alert->message}\n\n"
+            ."Severity: <b>{$alert->severity}</b>\n"
+            ."Time: {$alert->created_at->format('Y-m-d H:i:s')}\n"
+            ."Device: {$alert->device->name}";
     }
 }

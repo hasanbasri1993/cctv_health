@@ -16,8 +16,11 @@ use Illuminate\Support\Facades\Log;
 class HikvisionISAPIService implements HikvisionISAPIServiceInterface
 {
     private const CONNECT_TIMEOUT = 5;
+
     private const REQUEST_TIMEOUT = 10;
+
     private const RETRY_TIMES = 3;
+
     private const RETRY_SLEEP_MS = 500;
 
     public function getChannelStatus(Device $device): ChannelStatusResponse
@@ -38,7 +41,7 @@ class HikvisionISAPIService implements HikvisionISAPIServiceInterface
                 'error' => $e->getMessage(),
             ]);
 
-            return ChannelStatusResponse::failure('Connection timeout: ' . $e->getMessage());
+            return ChannelStatusResponse::failure('Connection timeout: '.$e->getMessage());
         } catch (\Exception $e) {
             Log::error('ISAPI channel status error', [
                 'device_id' => $device->id,
@@ -73,7 +76,7 @@ class HikvisionISAPIService implements HikvisionISAPIServiceInterface
                 'error' => $e->getMessage(),
             ]);
 
-            return StorageStatusResponse::failure('Connection timeout: ' . $e->getMessage());
+            return StorageStatusResponse::failure('Connection timeout: '.$e->getMessage());
         } catch (\Exception $e) {
             Log::error('ISAPI storage status error', [
                 'device_id' => $device->id,
@@ -109,7 +112,7 @@ class HikvisionISAPIService implements HikvisionISAPIServiceInterface
                 'error' => $e->getMessage(),
             ]);
 
-            return DeviceHealthResponse::failure('Connection timeout: ' . $e->getMessage());
+            return DeviceHealthResponse::failure('Connection timeout: '.$e->getMessage());
         } catch (\Exception $e) {
             Log::error('ISAPI device health error', [
                 'device_id' => $device->id,
@@ -149,6 +152,7 @@ class HikvisionISAPIService implements HikvisionISAPIServiceInterface
                     'device_id' => $device->id,
                     'url' => $url,
                 ]);
+
                 return ConnectionTestResult::failure('Authentication failed. Check username and password.');
             }
 
@@ -159,7 +163,8 @@ class HikvisionISAPIService implements HikvisionISAPIServiceInterface
                     'http_status' => $response->status(),
                     'body' => $response->body(),
                 ]);
-                return ConnectionTestResult::failure("HTTP {$response->status()}: " . substr($response->body(), 0, 200));
+
+                return ConnectionTestResult::failure("HTTP {$response->status()}: ".substr($response->body(), 0, 200));
             }
 
             $info = $this->parseDeviceInfo($response->body());
@@ -180,7 +185,8 @@ class HikvisionISAPIService implements HikvisionISAPIServiceInterface
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-            return ConnectionTestResult::failure('Cannot connect to device: ' . $e->getMessage());
+
+            return ConnectionTestResult::failure('Cannot connect to device: '.$e->getMessage());
         } catch (\Exception $e) {
             Log::error('ISAPI testConnection unexpected error', [
                 'device_id' => $device->id,
@@ -189,6 +195,7 @@ class HikvisionISAPIService implements HikvisionISAPIServiceInterface
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return ConnectionTestResult::failure($e->getMessage());
         }
     }
@@ -211,6 +218,7 @@ class HikvisionISAPIService implements HikvisionISAPIServiceInterface
                 Log::warning('ISAPI request retry', [
                     'error' => $e->getMessage(),
                 ]);
+
                 return $e instanceof ConnectionException;
             }, throw: false)
             ->accept('application/xml')

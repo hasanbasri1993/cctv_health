@@ -16,6 +16,7 @@ class NotifyAlertJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 5;
+
     public array $backoff = [30, 60, 120, 300, 600];
 
     public function __construct(public readonly Alert $alert) {}

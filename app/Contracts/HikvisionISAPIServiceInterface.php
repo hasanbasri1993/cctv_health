@@ -11,7 +11,10 @@ use App\Models\Device;
 interface HikvisionISAPIServiceInterface
 {
     public function getChannelStatus(Device $device): ChannelStatusResponse;
+
     public function getStorageStatus(Device $device): StorageStatusResponse;
+
     public function getDeviceHealth(Device $device): DeviceHealthResponse;
+
     public function testConnection(Device $device): ConnectionTestResult;
 }

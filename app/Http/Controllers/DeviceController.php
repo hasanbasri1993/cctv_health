@@ -2,9 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\DTOs\ConnectionTestResult;
-use App\Models\Device;
 use App\Contracts\HikvisionISAPIServiceInterface;
+use App\Models\Device;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;

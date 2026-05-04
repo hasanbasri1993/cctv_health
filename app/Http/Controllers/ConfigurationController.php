@@ -55,7 +55,7 @@ class ConfigurationController extends Controller
         }
 
         if (! empty($validated['mail_from_address'])) {
-            $updates['MAIL_FROM_ADDRESS'] = '"' . $validated['mail_from_address'] . '"';
+            $updates['MAIL_FROM_ADDRESS'] = '"'.$validated['mail_from_address'].'"';
         }
 
         foreach ($updates as $key => $value) {

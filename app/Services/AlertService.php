@@ -2,11 +2,11 @@
 
 namespace App\Services;
 
+use App\Jobs\NotifyAlertJob;
 use App\Models\Alert;
 use App\Models\Device;
 use App\Models\DeviceChannel;
 use App\Models\DeviceStorage;
-use Illuminate\Support\Facades\Log;
 
 class AlertService
 {
@@ -168,6 +168,6 @@ class AlertService
 
     private function queueNotification(Alert $alert): void
     {
-        dispatch(new \App\Jobs\NotifyAlertJob($alert));
+        dispatch(new NotifyAlertJob($alert));
     }
 }

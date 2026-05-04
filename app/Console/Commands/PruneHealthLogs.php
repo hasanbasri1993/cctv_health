@@ -8,6 +8,7 @@ use Illuminate\Console\Command;
 class PruneHealthLogs extends Command
 {
     protected $signature = 'monitor:prune-logs {--days=30 : Keep logs for this many days}';
+
     protected $description = 'Delete old device health logs';
 
     public function handle(): int
