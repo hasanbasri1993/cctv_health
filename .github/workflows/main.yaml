@@ -59,6 +59,7 @@ jobs:
             git config --global --add safe.directory /www/wwwroot/cctv
             git fetch origin main
             git reset --hard origin/main
+            git pull --rebase
             /www/server/php/82/bin/php /usr/bin/composer install --no-dev --optimize-autoloader --no-interaction
             /www/server/php/82/bin/php artisan optimize
             /www/server/php/82/bin/php artisan migrate --force
