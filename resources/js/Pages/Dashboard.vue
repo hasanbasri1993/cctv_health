@@ -517,7 +517,7 @@ onUnmounted(() => {
             <!-- video loss -->
             <div v-if="tooltip.type === 'video'" class="min-w-[160px] rounded-md border border-white/[0.08] bg-slate-900 p-2 shadow-xl">
                 <p class="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">No Video Channels</p>
-                <div v-for="ch in tooltip.device.channels" :key="ch.id" class="flex items-center gap-2 py-0.5">
+                <div v-for="ch in tooltip.device.channels.filter(c => c.status === 'no_video')" :key="ch.id" class="flex items-center gap-2 py-0.5">
                     <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400"></span>
                     <span class="text-[12px] text-slate-300">CH{{ ch.channel_number }}{{ ch.name ? ' — ' + ch.name : '' }}</span>
                 </div>
