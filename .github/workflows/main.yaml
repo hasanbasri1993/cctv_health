@@ -31,20 +31,21 @@ jobs:
             echo "has_changes=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Set up Node.js
-        if: steps.check-frontend.outputs.has_changes == 'true'
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
       - name: Install JS dependencies
         if: steps.check-frontend.outputs.has_changes == 'true'
-        run: npm ci
+        run: |
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          nvm use v22.18.0
+          npm ci
 
       - name: Build frontend assets
         if: steps.check-frontend.outputs.has_changes == 'true'
-        run: npm run build
+        run: |
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          nvm use v22.18.0
+          npm run build
 
       - name: Deploy PHP to server
         uses: appleboy/ssh-action@v1.2.0
@@ -58,7 +59,7 @@ jobs:
             git config --global --add safe.directory /www/wwwroot/cctv
             git fetch origin main
             git reset --hard origin/main
-            /www/server/php/82/bin/php /usr/local/bin/composer install --no-dev --optimize-autoloader --no-interaction
+            /www/server/php/82/bin/php /usr/bin/composer install --no-dev --optimize-autoloader --no-interaction
             /www/server/php/82/bin/php artisan optimize
             /www/server/php/82/bin/php artisan migrate --force
             /www/server/php/82/bin/php artisan octane:reload
