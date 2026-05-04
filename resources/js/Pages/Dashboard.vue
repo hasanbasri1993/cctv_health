@@ -409,8 +409,8 @@ onUnmounted(() => {
             </div>
 
             <!-- Table -->
-            <div class="overflow-x-auto overflow-y-visible">
-                <table class="w-full text-[13px]">
+            <div class="relative">
+                <table class="w-full min-w-[640px] text-[13px]">
                     <thead>
                         <tr class="border-b border-white/[0.04] text-[11px] uppercase tracking-wider text-slate-500">
                             <th class="px-4 py-2.5 text-left font-medium">Device</th>
