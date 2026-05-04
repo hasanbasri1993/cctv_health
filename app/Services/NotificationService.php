@@ -27,7 +27,10 @@ class NotificationService
             }
         }
 
-        if (config('mail.from.address') !== 'hello@example.com') {
+        $recipients = config('monitoring.email_recipients', []);
+        $mailFrom = config('mail.from.address');
+        
+        if (!empty($recipients) && $mailFrom && $mailFrom !== 'hello@example.com') {
             try {
                 $this->sendEmailNotification($alert);
                 $sent++;
@@ -50,9 +53,10 @@ class NotificationService
     public function sendTelegramNotification(Alert $alert): void
     {
         $token = config('services.telegram.bot_token');
-        $chatId = config('services.telegram.chat_id');
+        $chatIds = config('services.telegram.chat_ids', []);
+        $messageThreadId = config('services.telegram.message_thread_id');
 
-        if (! $token || ! $chatId) {
+        if (! $token || empty($chatIds)) {
             Log::warning('Telegram credentials not configured');
 
             return;
@@ -61,11 +65,24 @@ class NotificationService
         $telegram = new TelegramApi($token);
         $message = $this->formatAlertMessage($alert);
 
-        $telegram->sendMessage([
-            'chat_id' => $chatId,
-            'text' => $message,
-            'parse_mode' => 'HTML',
-        ]);
+        foreach ($chatIds as $chatId) {
+            $chatId = trim($chatId);
+            if (empty($chatId)) {
+                continue;
+            }
+
+            $params = [
+                'chat_id' => $chatId,
+                'text' => $message,
+                'parse_mode' => 'HTML',
+            ];
+
+            if ($messageThreadId) {
+                $params['message_thread_id'] = $messageThreadId;
+            }
+
+            $telegram->sendMessage($params);
+        }
     }
 
     public function sendEmailNotification(Alert $alert): void
@@ -77,8 +94,9 @@ class NotificationService
         }
 
         Mail::send('emails.alert', ['alert' => $alert], function ($message) use ($alert, $recipients) {
+            $env = strtoupper(config('app.env', 'production'));
             $message->to($recipients)
-                ->subject("[{$alert->severity}] {$alert->title}");
+                ->subject("[{$env}] [{$alert->severity}] {$alert->title}");
         });
     }
 
@@ -90,8 +108,17 @@ class NotificationService
             default => '🔵',
         };
 
+        $env = strtoupper(config('app.env', 'production'));
+        $envLabel = match ($env) {
+            'PRODUCTION' => '🟢',
+            'STAGING' => '🟠',
+            'LOCAL' => '⚪',
+            default => '🔷',
+        };
+
         return "{$severityEmoji} <b>{$alert->title}</b>\n\n"
             ."{$alert->message}\n\n"
+            ."Environment: {$envLabel} <b>{$env}</b>\n"
             ."Severity: <b>{$alert->severity}</b>\n"
             ."Time: {$alert->created_at->format('Y-m-d H:i:s')}\n"
             ."Device: {$alert->device->name}";
