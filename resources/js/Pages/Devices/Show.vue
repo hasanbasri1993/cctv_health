@@ -14,7 +14,7 @@ const props = defineProps({
     channels: { type: Array, default: () => [] },
     storages: { type: Array, default: () => [] },
     alerts: { type: Array, default: () => [] },
-    healthLogs: { type: Array, default: () => [] },
+    healthLogs: { type: Object, default: () => ({ data: [], links: [], meta: {} }) },
 });
 
 const testingConnection = ref(false);
@@ -250,25 +250,47 @@ const severityClasses = {
                     <div class="px-6 py-4" style="height:180px;">
                         <canvas ref="chartCanvas"></canvas>
                     </div>
-                    <div v-if="healthLogs.length > 0" class="overflow-x-auto">
+                    <div v-if="healthLogs.data.length > 0" class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-100 text-sm">
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Time</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Status</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Response</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Temp</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100 bg-white">
-                                <tr v-for="log in healthLogs" :key="log.id" class="hover:bg-gray-50">
+                                <tr v-for="log in healthLogs.data" :key="log.id" class="hover:bg-gray-50">
                                     <td class="whitespace-nowrap px-6 py-3 text-gray-600">{{ formatDateTime(log.created_at) }}</td>
                                     <td class="whitespace-nowrap px-6 py-3">
                                         <StatusIndicator :status="log.status" />
                                     </td>
                                     <td class="px-6 py-3 text-gray-600">{{ log.response_time_ms ? log.response_time_ms + 'ms' : '—' }}</td>
+                                    <td class="px-6 py-3 text-gray-600">{{ log.temperature !== null && log.temperature !== undefined ? log.temperature + '°C' : '—' }}</td>
                                 </tr>
                             </tbody>
                         </table>
+                        <!-- Pagination -->
+                        <div v-if="healthLogs.meta.last_page > 1" class="flex items-center justify-between border-t border-gray-100 px-6 py-3">
+                            <p class="text-xs text-gray-500">
+                                Showing {{ healthLogs.meta.from }}–{{ healthLogs.meta.to }} of {{ healthLogs.meta.total }}
+                            </p>
+                            <div class="flex gap-1">
+                                <Link
+                                    v-for="link in healthLogs.links"
+                                    :key="link.label"
+                                    :href="link.url ?? '#'"
+                                    :class="[
+                                        'px-2.5 py-1 rounded text-xs border',
+                                        link.active ? 'bg-indigo-600 text-white border-indigo-600' : 'text-gray-600 border-gray-200 hover:bg-gray-50',
+                                        !link.url ? 'opacity-40 pointer-events-none' : '',
+                                    ]"
+                                    preserve-scroll
+                                    v-html="link.label"
+                                />
+                            </div>
+                        </div>
                     </div>
                     <div v-else class="px-6 py-4 text-sm text-gray-500">No health history yet.</div>
                 </div>

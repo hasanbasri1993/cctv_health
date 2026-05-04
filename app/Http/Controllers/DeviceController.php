@@ -58,8 +58,7 @@ class DeviceController extends Controller
 
         $healthLogs = $device->healthLogs()
             ->latest()
-            ->limit(50)
-            ->get();
+            ->paginate(20);
 
         return Inertia::render('Devices/Show', [
             'device' => $device,
