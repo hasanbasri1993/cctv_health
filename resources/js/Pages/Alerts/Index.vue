@@ -174,8 +174,9 @@ const activeFiltersCount = computed(() =>
                 </button>
             </div>
 
-            <div v-else class="overflow-x-auto">
-                <table class="min-w-full text-[13px]">
+            <!-- Table (desktop) -->
+            <div v-else class="hidden lg:block">
+                <table class="w-full text-[13px]">
                     <thead>
                         <tr class="border-b border-white/[0.06] text-left text-[11px] uppercase tracking-wider text-slate-500">
                             <th class="px-5 py-3 font-medium">Title</th>
@@ -233,6 +234,45 @@ const activeFiltersCount = computed(() =>
                         </tr>
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Cards (mobile) -->
+            <div v-if="alertsList.length > 0" class="lg:hidden divide-y divide-white/[0.04]">
+                <div
+                    v-for="alert in alertsList"
+                    :key="alert.id"
+                    class="p-4"
+                >
+                    <div class="flex items-start justify-between gap-3 mb-2">
+                        <p class="font-medium text-slate-200 text-[14px] leading-tight">{{ alert.title }}</p>
+                        <span
+                            :class="severityBadge[alert.severity] ?? 'bg-slate-700/60 text-slate-400'"
+                            class="inline-flex shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium capitalize"
+                        >
+                            {{ alert.severity }}
+                        </span>
+                    </div>
+                    <p v-if="alert.message" class="text-[12px] text-slate-500 mb-2 line-clamp-2">{{ alert.message }}</p>
+                    <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] mb-3">
+                        <span v-if="alert.device" class="text-slate-400">
+                            <Link :href="`/devices/${alert.device.id}`" class="hover:text-cyan-400">{{ alert.device.name }}</Link>
+                        </span>
+                        <span :class="statusBadge[alert.status] ?? 'bg-slate-700/60 text-slate-400'" class="rounded px-1.5 py-0.5 capitalize">
+                            {{ alert.status }}
+                        </span>
+                        <span class="text-slate-500 tabular-nums">{{ formatDateTime(alert.created_at) }}</span>
+                    </div>
+                    <div class="text-right">
+                        <button
+                            v-if="alert.status === 'active'"
+                            type="button"
+                            @click="acknowledgeAlert(alert)"
+                            class="text-[13px] font-medium text-cyan-400 hover:text-cyan-300"
+                        >
+                            Acknowledge
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <!-- Pagination -->
