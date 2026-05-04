@@ -19,6 +19,12 @@ const props = defineProps({
 });
 
 const testingConnection = ref(false);
+const perPage = ref(new URLSearchParams(window.location.search).get('per_page') ?? '20');
+
+function changePerPage(val) {
+    perPage.value = val;
+    router.get(route('devices.show', props.device.id), { per_page: val }, { preserveScroll: true, preserveState: true });
+}
 const testResult = ref(null);
 const chartCanvas = ref(null);
 let chartInstance = null;
@@ -263,8 +269,22 @@ const severityClasses = {
 
                 <!-- Health Log -->
                 <div class="rounded-lg bg-white shadow overflow-hidden">
-                    <div class="px-6 py-4 border-b border-gray-100">
+                    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                         <h3 class="text-base font-semibold text-gray-800">Health History</h3>
+                        <div class="flex items-center gap-2 text-sm text-gray-500">
+                            <label for="per-page" class="text-xs">Rows</label>
+                            <select
+                                id="per-page"
+                                :value="perPage"
+                                @change="changePerPage($event.target.value)"
+                                class="rounded border border-gray-200 px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                            >
+                                <option value="5">5</option>
+                                <option value="10">10</option>
+                                <option value="15">15</option>
+                                <option value="20">20</option>
+                            </select>
+                        </div>
                     </div>
 
                     <!-- Temp Stats Card -->

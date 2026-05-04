@@ -56,9 +56,11 @@ class DeviceController extends Controller
             ->limit(20)
             ->get();
 
+        $perPage = in_array((int) request('per_page'), [5, 10, 15, 20]) ? (int) request('per_page') : 20;
+
         $healthLogs = $device->healthLogs()
             ->latest()
-            ->paginate(20);
+            ->paginate($perPage);
 
         $tempStats = $device->healthLogs()
             ->whereNotNull('temperature')
