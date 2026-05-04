@@ -458,15 +458,57 @@ onUnmounted(() => {
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-center">
-                                <span v-if="(device.no_video_count ?? 0) > 0" class="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-400">
-                                    {{ device.no_video_count }} ch
-                                </span>
+                                <div v-if="(device.no_video_count ?? 0) > 0" class="group relative inline-block">
+                                    <span class="inline-flex cursor-default items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-400">
+                                        {{ device.no_video_count }} ch
+                                    </span>
+                                    <div class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 hidden -translate-x-1/2 group-hover:block">
+                                        <div class="min-w-[160px] rounded-md border border-white/[0.08] bg-slate-900 p-2 shadow-xl text-left">
+                                            <p class="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">No Video Channels</p>
+                                            <div v-for="ch in device.channels" :key="ch.id" class="flex items-center gap-2 py-0.5">
+                                                <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400"></span>
+                                                <span class="text-[12px] text-slate-300">
+                                                    CH{{ ch.channel_number }}{{ ch.name ? ' — ' + ch.name : '' }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="mx-auto h-1.5 w-2.5 overflow-hidden">
+                                            <div class="mx-auto h-2 w-2 rotate-45 border-b border-r border-white/[0.08] bg-slate-900"></div>
+                                        </div>
+                                    </div>
+                                </div>
                                 <span v-else class="text-slate-600">—</span>
                             </td>
                             <td class="px-4 py-3 text-center">
-                                <span v-if="(device.fault_storage_count ?? 0) > 0" class="inline-flex items-center gap-1 rounded-full bg-indigo-500/15 px-2 py-0.5 text-[11px] font-semibold text-indigo-400">
-                                    {{ device.fault_storage_count }} fault
-                                </span>
+                                <div v-if="(device.fault_storage_count ?? 0) > 0" class="group relative inline-block">
+                                    <span class="inline-flex cursor-default items-center gap-1 rounded-full bg-indigo-500/15 px-2 py-0.5 text-[11px] font-semibold text-indigo-400">
+                                        {{ device.fault_storage_count }} fault
+                                    </span>
+                                    <div class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 hidden -translate-x-1/2 group-hover:block">
+                                        <div class="min-w-[180px] rounded-md border border-white/[0.08] bg-slate-900 p-2 shadow-xl text-left">
+                                            <p class="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Storage Issues</p>
+                                            <div v-for="st in device.storages" :key="st.id" class="flex items-center justify-between gap-3 py-0.5">
+                                                <div class="flex items-center gap-2">
+                                                    <span :class="[
+                                                        'h-1.5 w-1.5 shrink-0 rounded-full',
+                                                        st.health_status === 'fault' ? 'bg-red-400' : 'bg-slate-400'
+                                                    ]"></span>
+                                                    <span class="text-[12px] text-slate-300">{{ st.name || 'HDD' }}</span>
+                                                </div>
+                                                <div class="flex items-center gap-2 shrink-0">
+                                                    <span :class="[
+                                                        'rounded px-1 py-px text-[10px] font-medium',
+                                                        st.health_status === 'fault' ? 'bg-red-500/20 text-red-400' : 'bg-slate-600/40 text-slate-400'
+                                                    ]">{{ st.health_status }}</span>
+                                                    <span v-if="st.temperature" class="text-[11px] text-slate-500">{{ st.temperature }}°C</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="mx-auto h-1.5 w-2.5 overflow-hidden">
+                                            <div class="mx-auto h-2 w-2 rotate-45 border-b border-r border-white/[0.08] bg-slate-900"></div>
+                                        </div>
+                                    </div>
+                                </div>
                                 <span v-else class="text-slate-600">—</span>
                             </td>
                             <td class="px-4 py-3 text-center">

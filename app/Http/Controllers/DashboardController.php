@@ -19,6 +19,11 @@ class DashboardController extends Controller
             'alerts as active_alerts_count'       => fn ($q) => $q->whereIn('status', ['active', 'acknowledged']),
             'channels as no_video_count'           => fn ($q) => $q->where('status', 'no_video'),
             'storages as fault_storage_count'      => fn ($q) => $q->whereIn('health_status', ['fault', 'unknown']),
+        ])->with([
+            'channels' => fn ($q) => $q->where('status', 'no_video')
+                                       ->select('id', 'device_id', 'channel_number', 'name', 'status'),
+            'storages'  => fn ($q) => $q->whereIn('health_status', ['fault', 'unknown'])
+                                       ->select('id', 'device_id', 'name', 'health_status', 'temperature'),
         ])->orderBy('name')->get();
 
         $stats = Cache::remember('dashboard.stats', 30, function () use ($devices) {
