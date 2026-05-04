@@ -7,15 +7,15 @@ const props = defineProps({
 });
 
 const colorMap = {
-    online: 'bg-green-500',
-    ok: 'bg-green-500',
-    healthy: 'bg-green-500',
+    online: 'bg-emerald-500',
+    ok: 'bg-emerald-500',
+    healthy: 'bg-emerald-500',
     offline: 'bg-red-500',
     fault: 'bg-red-500',
-    warning: 'bg-yellow-400',
-    no_video: 'bg-yellow-400',
+    warning: 'bg-amber-400',
+    no_video: 'bg-amber-400',
     disabled: 'bg-orange-400',
-    unknown: 'bg-gray-400',
+    unknown: 'bg-slate-500',
 };
 
 const labelMap = {
@@ -30,15 +30,13 @@ const labelMap = {
     unknown: 'Unknown',
 };
 
-const dotClass = colorMap[props.status] ?? 'bg-gray-400';
+const dotClass = colorMap[props.status] ?? 'bg-slate-500';
 const label = labelMap[props.status] ?? props.status;
 </script>
 
 <template>
     <span class="inline-flex items-center gap-1.5">
-        <span
-            :class="[dotClass, 'h-2.5 w-2.5 rounded-full shrink-0']"
-        ></span>
-        <span class="text-sm font-medium capitalize text-gray-700">{{ label }}</span>
+        <span :class="[dotClass, 'h-2 w-2 rounded-full shrink-0']"></span>
+        <span class="text-[13px] font-medium capitalize text-slate-300">{{ label }}</span>
     </span>
 </template>

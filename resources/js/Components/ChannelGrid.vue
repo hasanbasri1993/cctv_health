@@ -16,28 +16,28 @@ function formatDate(dateStr) {
 
 <template>
     <div>
-        <div v-if="channels.length === 0" class="rounded-lg border-2 border-dashed border-gray-200 p-8 text-center">
-            <p class="text-sm text-gray-500">No channels configured for this device.</p>
+        <div v-if="channels.length === 0" class="rounded-lg border border-dashed border-white/[0.08] p-8 text-center">
+            <p class="text-[13px] text-slate-500">No channels configured for this device.</p>
         </div>
-        <div v-else class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+        <div v-else class="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
             <div
                 v-for="channel in channels"
                 :key="channel.id"
-                class="rounded-lg border border-gray-200 bg-white p-3 shadow-sm"
+                class="rounded-lg border border-white/[0.06] bg-slate-800/50 p-3"
             >
-                <div class="mb-2 flex items-center justify-between">
-                    <span class="text-xs font-bold text-gray-400">CH {{ channel.channel_number }}</span>
+                <div class="mb-1.5 flex items-center justify-between">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">CH {{ channel.channel_number }}</span>
                 </div>
-                <p class="mb-2 truncate text-sm font-medium text-gray-800" :title="channel.name">
+                <p class="mb-2 truncate text-[13px] font-medium text-slate-200" :title="channel.name">
                     {{ channel.name || `Channel ${channel.channel_number}` }}
                 </p>
                 <StatusIndicator :status="channel.status" />
                 <p
                     v-if="channel.last_status_change"
-                    class="mt-1.5 text-xs text-gray-400"
+                    class="mt-1.5 text-[11px] tabular-nums text-slate-500"
                     :title="formatDate(channel.last_status_change)"
                 >
-                    Changed {{ new Date(channel.last_status_change).toLocaleDateString() }}
+                    {{ new Date(channel.last_status_change).toLocaleDateString() }}
                 </p>
             </div>
         </div>
