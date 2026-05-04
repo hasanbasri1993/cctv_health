@@ -1,66 +1,189 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# CCTV Early Warning Monitor
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Web-based CCTV monitoring dashboard powered by Laravel + Vue 3 + Inertia.js + Chart.js. Connects to Hikvision DVRs via ISAPI to track device health, channel status, storage, and alerts.
 
-## About Laravel
+## Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Live Dashboard** — KPI row (total cameras, online, offline, active alerts), camera activity chart (24h), status breakdown donut with category list
+- **Device Issues Table** — filterable table showing devices with problems (camera offline, video loss, storage fault, active alerts), click category tabs to filter, hover badges for details
+- **Device Management** — add, edit, delete DVRs; view channels and storage per device; health history with response time + temperature chart
+- **Alert Center** — filter by status (active/acknowledged/resolved) and severity; acknowledge alerts; alert details with timeline
+- **Dark/Light Theme** — toggle via navbar button, preference persisted in localStorage
+- **Hikvision ISAPI Integration** — polls channel status, SMART health, storage status via XML ISAPI endpoints
+- **Notifications** — Telegram bot + email on new alerts
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+---
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Tech Stack
 
-## Learning Laravel
+| Layer | Tech |
+|-------|------|
+| Backend | Laravel 12, PHP 8.2+ |
+| Frontend | Vue 3, Inertia.js, Tailwind CSS v3 |
+| Charts | Chart.js |
+| Database | MySQL |
+| Queue | Laravel Queue + Redis/Database |
+| Auth | Laravel Breeze (email + password) |
+| API | Hikvision ISAPI XML |
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+---
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## How to Use
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 1. Add a Device (DVR)
 
-## Laravel Sponsors
+1. Go to **Devices** → **Add Device**
+2. Fill in:
+   - **Name** — friendly label (e.g. "NVR-MAIN", "Back Gate DVR")
+   - **IP Address** — Hikvision DVR IP (e.g. `192.168.1.64`)
+   - **Port** — ISAPI port (default `80` or `8080`)
+   - **Username** / **Password** — DVR credentials
+3. Click **Save**. System immediately begins polling.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### 2. Monitor Dashboard
 
-### Premium Partners
+- **KPI Row** — top of Dashboard shows live counts
+- **Camera Activity Chart** — dashed line = motion events, solid cyan = online cameras
+- **Status Breakdown** — donut chart + category list (Camera Offline, Video Loss, Communication Exception, Recording Exception, No Recording Schedule Config, Arming Exception)
+- **Device Issues Table** — devices with problems. Click any category tab to filter. Hover "N ch" or "fault" badges for details.
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+### 3. Acknowledge an Alert
 
-## Contributing
+1. Go to **Alerts**
+2. Find active alert → click **Acknowledge** button (cyan)
+3. Alert status changes to "Acknowledged", badge turns amber
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### 4. Configure Polling Intervals
 
-## Code of Conduct
+Admin only — go to **Config** page:
+- Channel status check interval (default 1 min)
+- Device health check interval (default 2 min)
+- Storage health check interval (default 5 min)
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### 5. Set Up Notifications
 
-## Security Vulnerabilities
+Edit `.env`:
+```env
+TELEGRAM_BOT_TOKEN=your_bot_token
+TELEGRAM_CHAT_ID=your_chat_id
+ALERT_EMAIL_RECIPIENTS=ops@example.com,admin@example.com
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+---
 
-## License
+## How to Edit / Manage
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### Add or Edit a Device
+**Devices** → **Add Device** or click device name → **Edit**. IP, port, and credentials are editable. Leave password blank to keep current.
+
+### Change Polling Intervals
+**Config** page (admin) or edit `.env`:
+```env
+POLLING_CHANNEL_INTERVAL=1
+POLLING_DEVICE_INTERVAL=2
+POLLING_STORAGE_INTERVAL=5
+```
+
+### Manage Users
+Admin: **Config** page → User Management section.
+Regular users: login at `/profile` to update name, email, password.
+
+### View Device Health History
+Click any device name → **Show** page → **Health History** tab. Chart shows response time (left axis) + temperature (right axis) for last 120 readings.
+
+### Toggle Dark/Light Theme
+Click the **sun/moon** icon in the top navbar. Preference saved in localStorage.
+
+---
+
+## Installation (Development)
+
+```bash
+# Install PHP + JS dependencies
+composer install
+npm install
+
+# Configure .env — set DB_* and optional TELEGRAM_* vars
+cp .env.example .env
+
+# Create MySQL database
+# CREATE DATABASE cctv_monitor;
+
+# Run migrations + seed admin account
+php artisan migrate
+php artisan db:seed
+
+# Build frontend
+npm run build
+
+# Start all services (web + queue + scheduler)
+composer run dev
+```
+
+**Default admin login:**
+- URL: `http://localhost:8000`
+- Email: `admin@example.com`
+- Password: `password`
+
+### Services (separate terminals for development)
+
+```bash
+php artisan serve                           # Web server (port 8000)
+php artisan queue:work --tries=3           # Queue worker
+php artisan schedule:work                  # Scheduler
+npm run dev                                # Vite hot-reload (optional)
+```
+
+---
+
+## Production Deployment
+
+```bash
+npm run build
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+
+# Run queue worker as daemon (Supervisor recommended)
+php artisan queue:work --sleep=3 --tries=3
+
+# Scheduler — add to crontab:
+# * * * * * cd /path/to/project && php artisan schedule:run >> /dev/null 2>&1
+```
+
+---
+
+## Project Structure
+
+```
+app/
+├── Http/Controllers/
+│   ├── DashboardController.php       # Dashboard data + stats
+│   ├── DeviceController.php          # CRUD + health history
+│   ├── AlertController.php           # Alert list + acknowledge
+│   └── ConfigurationController.php   # Polling intervals + notif settings
+├── Jobs/
+│   ├── PollDeviceHealthJob.php      # Device online/offline + response time
+│   ├── PollChannelStatusJob.php      # Channel video loss detection
+│   └── PollStorageStatusJob.php      # SMART health + temperature
+├── Models/
+│   ├── Device.php
+│   ├── DeviceChannel.php             # status: ok / no_video / disabled
+│   ├── DeviceStorage.php              # health_status: healthy / fault / unknown
+│   ├── DeviceHealthLog.php            # Health history with temperature
+│   └── Alert.php                      # Active, acknowledged, resolved alerts
+└── Services/
+    └── HikvisionISAPIService.php     # ISAPI XML polling + parsing
+
+resources/js/
+├── Pages/
+│   ├── Dashboard.vue                  # KPI + charts + device issues table
+│   ├── Devices/{Index,Create,Edit,Show}.vue
+│   ├── Alerts/Index.vue
+│   └── Configuration/Index.vue
+├── Layouts/
+│   ├── AuthenticatedLayout.vue        # Dark navbar + theme toggle
+│   └── GuestLayout.vue
+└── Composables/
+    └── useColorMode.js               # Dark/light toggle + localStorage
+```
