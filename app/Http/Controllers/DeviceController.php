@@ -60,12 +60,28 @@ class DeviceController extends Controller
             ->latest()
             ->paginate(20);
 
+        $tempStats = $device->healthLogs()
+            ->whereNotNull('temperature')
+            ->selectRaw('MAX(temperature) as max, MIN(temperature) as min, ROUND(AVG(temperature), 1) as avg')
+            ->first();
+
+        $lastTemp = $device->healthLogs()
+            ->whereNotNull('temperature')
+            ->latest()
+            ->value('temperature');
+
         return Inertia::render('Devices/Show', [
             'device' => $device,
             'channels' => $device->channels,
             'storages' => $device->storages,
             'alerts' => $alerts,
             'healthLogs' => $healthLogs,
+            'tempStats' => $tempStats ? [
+                'last' => $lastTemp,
+                'min' => $tempStats->min,
+                'max' => $tempStats->max,
+                'avg' => $tempStats->avg,
+            ] : null,
         ]);
     }
 

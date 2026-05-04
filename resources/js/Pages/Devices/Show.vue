@@ -15,6 +15,7 @@ const props = defineProps({
     storages: { type: Array, default: () => [] },
     alerts: { type: Array, default: () => [] },
     healthLogs: { type: Object, default: () => ({ data: [], links: [], last_page: 1, from: null, to: null, total: 0 }) },
+    tempStats: { type: Object, default: null },
 });
 
 const testingConnection = ref(false);
@@ -247,6 +248,31 @@ const severityClasses = {
                     <div class="px-6 py-4 border-b border-gray-100">
                         <h3 class="text-base font-semibold text-gray-800">Health History</h3>
                     </div>
+
+                    <!-- Temp Stats Card -->
+                    <div v-if="tempStats" class="grid grid-cols-4 divide-x divide-gray-100 border-b border-gray-100 bg-gray-50">
+                        <div class="px-5 py-3 text-center">
+                            <p class="text-xs text-gray-400 uppercase tracking-wide">Last</p>
+                            <p class="mt-1 text-lg font-semibold" :class="tempStats.last >= 55 ? 'text-red-600' : tempStats.last >= 45 ? 'text-yellow-600' : 'text-gray-800'">
+                                {{ tempStats.last }}°C
+                            </p>
+                        </div>
+                        <div class="px-5 py-3 text-center">
+                            <p class="text-xs text-gray-400 uppercase tracking-wide">Min</p>
+                            <p class="mt-1 text-lg font-semibold text-blue-600">{{ tempStats.min }}°C</p>
+                        </div>
+                        <div class="px-5 py-3 text-center">
+                            <p class="text-xs text-gray-400 uppercase tracking-wide">Max</p>
+                            <p class="mt-1 text-lg font-semibold" :class="tempStats.max >= 55 ? 'text-red-600' : tempStats.max >= 45 ? 'text-yellow-600' : 'text-gray-800'">
+                                {{ tempStats.max }}°C
+                            </p>
+                        </div>
+                        <div class="px-5 py-3 text-center">
+                            <p class="text-xs text-gray-400 uppercase tracking-wide">Avg</p>
+                            <p class="mt-1 text-lg font-semibold text-gray-700">{{ tempStats.avg }}°C</p>
+                        </div>
+                    </div>
+
                     <div class="px-6 py-4" style="height:180px;">
                         <canvas ref="chartCanvas"></canvas>
                     </div>
