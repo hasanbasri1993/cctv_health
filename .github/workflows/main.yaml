@@ -31,21 +31,13 @@ jobs:
             echo "has_changes=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Install JS dependencies
-        if: steps.check-frontend.outputs.has_changes == 'true'
-        run: |
-          export NVM_DIR="$HOME/.nvm"
-          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-          nvm install v22.18.0
-          npm ci
-
       - name: Build frontend assets
         if: steps.check-frontend.outputs.has_changes == 'true'
         run: |
           export NVM_DIR="$HOME/.nvm"
           [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-          nvm install v22.18.0
-          npm i
+          nvm use v22.18.0 || nvm install v22.18.0
+          npm ci
           npm run build
 
       - name: Deploy PHP to server
