@@ -60,6 +60,12 @@ class HikvisionISAPIService implements HikvisionISAPIServiceInterface
 
             $storages = $this->parseStorageStatus($response->body());
 
+            foreach ($storages as &$storage) {
+                $smart = $this->fetchSMARTData($device, $storage['storage_id']);
+                $storage['health_status'] = $smart['health_status'];
+                $storage['temperature'] = $smart['temperature'];
+            }
+
             return StorageStatusResponse::success($storages);
         } catch (ConnectionException $e) {
             Log::warning('ISAPI storage status connection failed', [
@@ -291,6 +297,48 @@ class HikvisionISAPIService implements HikvisionISAPIServiceInterface
             'IDLE' => 'idle',
             default => 'unknown',
         };
+    }
+
+    private function fetchSMARTData(Device $device, int $hddId): array
+    {
+        try {
+            $response = $this->makeRequest($device, "/ISAPI/ContentMgmt/Storage/hdd/{$hddId}/SMARTTest/status");
+
+            if (! $response->successful()) {
+                return ['health_status' => 'unknown', 'temperature' => null];
+            }
+
+            return $this->parseSMARTStatus($response->body());
+        } catch (\Exception $e) {
+            Log::warning('ISAPI SMART status fetch failed', [
+                'device_id' => $device->id,
+                'hdd_id' => $hddId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return ['health_status' => 'unknown', 'temperature' => null];
+        }
+    }
+
+    private function parseSMARTStatus(string $xml): array
+    {
+        try {
+            $doc = new \SimpleXMLElement($xml);
+            $ns = 'http://www.hikvision.com/ver20/XMLSchema';
+
+            $children = $doc->children($ns);
+            $diskStatus = (string) ($children->diskStatus ?? $doc->diskStatus ?? '');
+            $tempRaw = (string) ($children->temperature ?? $doc->temperature ?? '');
+
+            return [
+                'health_status' => $this->mapStorageHealth($diskStatus ?: 'unknown'),
+                'temperature' => $tempRaw !== '' ? (int) $tempRaw : null,
+            ];
+        } catch (\Exception $e) {
+            Log::warning('Failed to parse SMART status XML', ['error' => $e->getMessage()]);
+
+            return ['health_status' => 'unknown', 'temperature' => null];
+        }
     }
 
     private function mapStorageHealth(string $status): string
