@@ -13,12 +13,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
 
       - name: Check for frontend changes
         id: check-frontend
         run: |
-          if git diff --name-only HEAD~1..HEAD | grep -qE '^(resources/|package\.json|vite\.config)'; then
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.event.after }}"
+          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ] || [ -z "$BEFORE" ]; then
+            RANGE="HEAD~1..HEAD"
+          else
+            RANGE="$BEFORE..$AFTER"
+          fi
+          if git diff --name-only "$RANGE" | grep -qE '^(resources/|package\.json|vite\.config)'; then
             echo "has_changes=true" >> $GITHUB_OUTPUT
           else
             echo "has_changes=false" >> $GITHUB_OUTPUT
