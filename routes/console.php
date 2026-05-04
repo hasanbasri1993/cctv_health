@@ -16,18 +16,18 @@ Schedule::call(function () {
     Device::where('status', '!=', 'disabled')->each(function (Device $device) {
         PollDeviceHealthJob::dispatch($device);
     });
-})->everyTwoMinutes()->name('poll-device-health')->withoutOverlapping();
+})->cron('*/' . config('monitoring.polling.device_interval') . ' * * * *')->name('poll-device-health')->withoutOverlapping();
 
 Schedule::call(function () {
     Device::where('status', '!=', 'disabled')->each(function (Device $device) {
         PollChannelStatusJob::dispatch($device);
     });
-})->everyMinute()->name('poll-channel-status')->withoutOverlapping();
+})->cron('*/' . config('monitoring.polling.channel_interval') . ' * * * *')->name('poll-channel-status')->withoutOverlapping();
 
 Schedule::call(function () {
     Device::where('status', '!=', 'disabled')->each(function (Device $device) {
         PollStorageStatusJob::dispatch($device);
     });
-})->everyFiveMinutes()->name('poll-storage-status')->withoutOverlapping();
+})->cron('*/' . config('monitoring.polling.storage_interval') . ' * * * *')->name('poll-storage-status')->withoutOverlapping();
 
 Schedule::command('monitor:prune-logs --days=30')->daily()->name('prune-health-logs');
