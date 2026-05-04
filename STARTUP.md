@@ -1,4 +1,4 @@
-# CCTV Monitor — Startup Guide
+# CCTV Early Warning — Startup Guide
 
 ## Prerequisites
 
