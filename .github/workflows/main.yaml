@@ -36,7 +36,7 @@ jobs:
         run: |
           export NVM_DIR="$HOME/.nvm"
           [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-          nvm use v22.18.0
+          nvm install v22.18.0
           npm ci
 
       - name: Build frontend assets
@@ -44,7 +44,7 @@ jobs:
         run: |
           export NVM_DIR="$HOME/.nvm"
           [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-          nvm use v22.18.0
+          nvm install v22.18.0
           npm run build
 
       - name: Deploy PHP to server
