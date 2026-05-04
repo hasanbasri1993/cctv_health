@@ -1,3 +1,84 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* =========================================================
+   LIGHT MODE — applied when <html class="light">
+   Overrides the dark-slate base palette used throughout.
+   ========================================================= */
+
+/* Page background */
+html.light { background-color: #f1f5f9; }
+html.light body { background-color: #f1f5f9; }
+
+/* bg-slate-950 */
+html.light .bg-slate-950 { background-color: #f1f5f9 !important; }
+
+/* bg-slate-900 variants */
+html.light .bg-slate-900 { background-color: #ffffff !important; }
+html.light .bg-slate-900\/40 { background-color: rgba(255,255,255,0.9) !important; }
+html.light .bg-slate-900\/60 { background-color: rgba(255,255,255,0.95) !important; }
+html.light .bg-slate-900\/80 { background-color: rgba(255,255,255,0.97) !important; }
+
+/* bg-slate-800 variants */
+html.light .bg-slate-800 { background-color: #e2e8f0 !important; }
+html.light .bg-slate-800\/30 { background-color: rgba(226,232,240,0.4) !important; }
+html.light .bg-slate-800\/40 { background-color: rgba(226,232,240,0.5) !important; }
+html.light .bg-slate-800\/50 { background-color: rgba(226,232,240,0.6) !important; }
+html.light .bg-slate-800\/60 { background-color: rgba(226,232,240,0.8) !important; }
+html.light .bg-slate-800\/70 { background-color: rgba(226,232,240,0.85) !important; }
+
+/* bg-slate-700 variants */
+html.light .bg-slate-700 { background-color: #cbd5e1 !important; }
+html.light .bg-slate-700\/60 { background-color: rgba(203,213,225,0.7) !important; }
+
+/* Text overrides */
+html.light .text-slate-100 { color: #0f172a !important; }
+html.light .text-slate-200 { color: #1e293b !important; }
+html.light .text-slate-300 { color: #334155 !important; }
+html.light .text-slate-400 { color: #475569 !important; }
+html.light .text-slate-500 { color: #64748b !important; }
+html.light .text-slate-600 { color: #94a3b8 !important; }
+
+/* Border overrides — white-opacity borders → slate borders */
+html.light .border-white\/\[0\.06\] { border-color: #e2e8f0 !important; }
+html.light .border-white\/\[0\.08\] { border-color: #cbd5e1 !important; }
+html.light .border-white\/\[0\.15\] { border-color: #94a3b8 !important; }
+html.light .divide-white\/\[0\.04\] > * + * { border-color: #f1f5f9 !important; }
+html.light .divide-white\/\[0\.05\] > * + * { border-color: #e2e8f0 !important; }
+html.light .divide-white\/\[0\.06\] > * + * { border-color: #e2e8f0 !important; }
+
+/* Ring overrides */
+html.light .ring-white\/\[0\.06\] { --tw-ring-color: #e2e8f0 !important; }
+
+/* Nav sticky bg */
+html.light nav.sticky { background-color: rgba(255,255,255,0.97) !important; border-bottom-color: #e2e8f0 !important; }
+
+/* Input backgrounds */
+html.light input[type="text"],
+html.light input[type="email"],
+html.light input[type="password"],
+html.light input[type="number"],
+html.light select,
+html.light textarea {
+    background-color: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+}
+html.light input::placeholder,
+html.light textarea::placeholder { color: #94a3b8 !important; }
+
+/* Table hover */
+html.light .hover\:bg-slate-800\/40:hover { background-color: rgba(226,232,240,0.4) !important; }
+html.light .hover\:bg-slate-800\/30:hover { background-color: rgba(226,232,240,0.3) !important; }
+
+/* Chart canvas — keep bg transparent so card bg shows */
+html.light canvas { filter: none; }
+
+/* Shadows lighter */
+html.light .shadow-\[0_1px_2px_rgba\(0\,0\,0\,0\.4\)\] {
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06) !important;
+}
+html.light .shadow-\[0_4px_32px_rgba\(0\,0\,0\,0\.5\)\] {
+    box-shadow: 0 4px 24px rgba(0,0,0,0.1) !important;
+}
