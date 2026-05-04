@@ -134,8 +134,9 @@ function deleteDevice(device) {
                 </Link>
             </div>
 
-            <div v-else class="overflow-x-auto">
-                <table class="min-w-full text-[13px]">
+            <!-- Table (desktop) -->
+            <div v-else class="hidden lg:block">
+                <table class="w-full text-[13px]">
                     <thead>
                         <tr class="border-b border-white/[0.06] text-left text-[11px] uppercase tracking-wider text-slate-500">
                             <th class="px-5 py-3 font-medium">Name</th>
@@ -173,6 +174,36 @@ function deleteDevice(device) {
                         </tr>
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Cards (mobile) -->
+            <div v-if="filteredDevices.length > 0" class="lg:hidden divide-y divide-white/[0.04]">
+                <div
+                    v-for="device in filteredDevices"
+                    :key="device.id"
+                    class="p-4"
+                >
+                    <div class="flex items-start justify-between gap-3 mb-2">
+                        <div class="min-w-0">
+                            <Link :href="`/devices/${device.id}`" class="block truncate font-medium text-slate-100 hover:text-cyan-400 text-[14px]">
+                                {{ device.name }}
+                            </Link>
+                            <p class="font-mono text-[12px] text-slate-500 mt-0.5">{{ device.ip_address }}</p>
+                        </div>
+                        <div class="shrink-0">
+                            <StatusIndicator :status="device.status" />
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-slate-400 mb-3">
+                        <span v-if="device.model">{{ device.model }}</span>
+                        <span class="text-slate-600">Last seen: <span class="text-slate-500 tabular-nums">{{ formatLastSeen(device.last_seen_at) }}</span></span>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <Link :href="`/devices/${device.id}`" class="text-[13px] text-cyan-400 hover:text-cyan-300">View</Link>
+                        <Link v-if="canManage" :href="`/devices/${device.id}/edit`" class="text-[13px] text-slate-400 hover:text-slate-200">Edit</Link>
+                        <button v-if="canManage" type="button" @click="deleteDevice(device)" class="text-[13px] text-red-500 hover:text-red-400">Delete</button>
+                    </div>
+                </div>
             </div>
         </div>
     </AuthenticatedLayout>
