@@ -139,7 +139,7 @@ class DeviceController extends Controller
     public function healthHistory(Device $device)
     {
         $logs = $device->healthLogs()
-            ->select('status', 'response_time_ms', 'created_at')
+            ->select('status', 'response_time_ms', 'temperature', 'created_at')
             ->latest()
             ->limit(120)
             ->get()

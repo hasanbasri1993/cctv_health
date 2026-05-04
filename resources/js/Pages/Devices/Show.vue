@@ -58,31 +58,49 @@ async function loadChart() {
         if (!logs.length) return;
 
         const labels = logs.map(l => new Date(l.created_at).toLocaleTimeString());
-        const data = logs.map(l => l.response_time_ms ?? null);
+        const responseData = logs.map(l => l.response_time_ms ?? null);
+        const tempData = logs.map(l => l.temperature ?? null);
+        const hasTemp = tempData.some(v => v !== null);
 
         if (chartInstance) chartInstance.destroy();
         chartInstance = new Chart(chartCanvas.value, {
             type: 'line',
             data: {
                 labels,
-                datasets: [{
-                    label: 'Response Time (ms)',
-                    data,
-                    borderColor: '#6366f1',
-                    backgroundColor: 'rgba(99,102,241,0.1)',
-                    fill: true,
-                    tension: 0.3,
-                    pointRadius: 2,
-                    spanGaps: false,
-                }],
+                datasets: [
+                    {
+                        label: 'Response Time (ms)',
+                        data: responseData,
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99,102,241,0.08)',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 2,
+                        spanGaps: false,
+                        yAxisID: 'y',
+                    },
+                    ...(hasTemp ? [{
+                        label: 'Temperature (°C)',
+                        data: tempData,
+                        borderColor: '#f97316',
+                        backgroundColor: 'transparent',
+                        fill: false,
+                        tension: 0.3,
+                        pointRadius: 2,
+                        spanGaps: true,
+                        yAxisID: 'yTemp',
+                        borderDash: [4, 2],
+                    }] : []),
+                ],
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: { tooltip: { mode: 'index', intersect: false } },
                 scales: {
-                    y: { beginAtZero: true, title: { display: true, text: 'ms' } },
+                    y: { beginAtZero: true, position: 'left', title: { display: true, text: 'ms' } },
                     x: { ticks: { maxTicksLimit: 12, maxRotation: 0 } },
+                    ...(hasTemp ? { yTemp: { position: 'right', title: { display: true, text: '°C' }, grid: { drawOnChartArea: false } } } : {}),
                 },
             },
         });
