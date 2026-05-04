@@ -17,7 +17,11 @@ const filteredDevices = computed(() => {
     let list = props.devices;
     if (search.value) {
         const q = search.value.toLowerCase();
-        list = list.filter(d => d.name.toLowerCase().includes(q) || d.ip_address.includes(q) || (d.model ?? '').toLowerCase().includes(q));
+        list = list.filter(d =>
+            d.name.toLowerCase().includes(q) ||
+            d.ip_address.includes(q) ||
+            (d.model ?? '').toLowerCase().includes(q),
+        );
     }
     if (statusFilter.value) {
         list = list.filter(d => d.status === statusFilter.value);
@@ -29,6 +33,7 @@ const stats = computed(() => ({
     total: props.devices.length,
     online: props.devices.filter(d => d.status === 'online').length,
     offline: props.devices.filter(d => d.status === 'offline').length,
+    alerts: props.devices.reduce((s, d) => s + (d.alerts_count ?? 0), 0),
 }));
 
 const canManage = computed(() => {
@@ -42,7 +47,7 @@ function formatLastSeen(dateStr) {
 }
 
 function deleteDevice(device) {
-    if (!confirm(`Delete device "${device.name}"? This cannot be undone.`)) return;
+    if (!confirm(`Delete "${device.name}"? This cannot be undone.`)) return;
     router.delete(`/devices/${device.id}`);
 }
 </script>
@@ -53,11 +58,14 @@ function deleteDevice(device) {
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center justify-between">
-                <h2 class="text-xl font-semibold leading-tight text-gray-800">Devices</h2>
+                <div>
+                    <h2 class="text-[17px] font-semibold text-slate-100">Devices</h2>
+                    <p class="text-[13px] text-slate-500">{{ stats.total }} registered device{{ stats.total !== 1 ? 's' : '' }}</p>
+                </div>
                 <Link
                     v-if="canManage"
                     href="/devices/create"
-                    class="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                    class="inline-flex items-center gap-1.5 rounded-md bg-cyan-600 px-3 py-2 text-[13px] font-medium text-white shadow-sm transition-colors hover:bg-cyan-500"
                 >
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -67,112 +75,105 @@ function deleteDevice(device) {
             </div>
         </template>
 
-        <div class="py-8">
-            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-4">
+        <!-- KPI row -->
+        <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div class="rounded-lg border border-white/[0.06] bg-slate-900/60 p-4">
+                <p class="text-[11px] font-medium uppercase tracking-wider text-slate-500">Total</p>
+                <p class="mt-1 text-2xl font-semibold tabular-nums text-slate-100">{{ stats.total }}</p>
+            </div>
+            <div class="rounded-lg border border-white/[0.06] bg-slate-900/60 p-4">
+                <p class="text-[11px] font-medium uppercase tracking-wider text-slate-500">Online</p>
+                <p class="mt-1 text-2xl font-semibold tabular-nums text-emerald-400">{{ stats.online }}</p>
+            </div>
+            <div class="rounded-lg border border-white/[0.06] bg-slate-900/60 p-4">
+                <p class="text-[11px] font-medium uppercase tracking-wider text-slate-500">Offline</p>
+                <p class="mt-1 text-2xl font-semibold tabular-nums text-red-400">{{ stats.offline }}</p>
+            </div>
+            <div class="rounded-lg border border-white/[0.06] bg-slate-900/60 p-4">
+                <p class="text-[11px] font-medium uppercase tracking-wider text-slate-500">Active Alerts</p>
+                <p class="mt-1 text-2xl font-semibold tabular-nums" :class="stats.alerts > 0 ? 'text-amber-400' : 'text-slate-300'">{{ stats.alerts }}</p>
+            </div>
+        </div>
 
-                <!-- Quick stats -->
-                <div class="grid grid-cols-3 gap-4">
-                    <div class="rounded-lg bg-white p-4 shadow-sm text-center">
-                        <div class="text-2xl font-bold text-gray-900">{{ stats.total }}</div>
-                        <div class="text-xs text-gray-500 mt-1">Total</div>
-                    </div>
-                    <div class="rounded-lg bg-white p-4 shadow-sm text-center">
-                        <div class="text-2xl font-bold text-green-600">{{ stats.online }}</div>
-                        <div class="text-xs text-gray-500 mt-1">Online</div>
-                    </div>
-                    <div class="rounded-lg bg-white p-4 shadow-sm text-center">
-                        <div class="text-2xl font-bold text-red-600">{{ stats.offline }}</div>
-                        <div class="text-xs text-gray-500 mt-1">Offline</div>
-                    </div>
-                </div>
+        <!-- Search & filter -->
+        <div class="mt-3 flex gap-2">
+            <div class="relative flex-1">
+                <svg class="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                    v-model="search"
+                    type="text"
+                    placeholder="Search by name, IP, or model…"
+                    class="w-full rounded-md border border-white/[0.08] bg-slate-800/60 py-2 pl-9 pr-3 text-[13px] text-slate-100 placeholder-slate-500 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/30"
+                />
+            </div>
+            <select
+                v-model="statusFilter"
+                class="rounded-md border border-white/[0.08] bg-slate-800/60 px-3 py-2 text-[13px] text-slate-300 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/30"
+            >
+                <option value="">All statuses</option>
+                <option value="online">Online</option>
+                <option value="offline">Offline</option>
+                <option value="unknown">Unknown</option>
+            </select>
+        </div>
 
-                <!-- Search & filter -->
-                <div class="flex gap-3">
-                    <input v-model="search" type="text" placeholder="Search by name, IP, or model…"
-                        class="flex-1 rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500" />
-                    <select v-model="statusFilter" class="rounded-md border-gray-300 text-sm shadow-sm">
-                        <option value="">All statuses</option>
-                        <option value="online">Online</option>
-                        <option value="offline">Offline</option>
-                        <option value="unknown">Unknown</option>
-                    </select>
-                </div>
+        <!-- Table -->
+        <div class="mt-3 rounded-lg border border-white/[0.06] bg-slate-900/60 shadow-[0_1px_2px_rgba(0,0,0,0.4)]">
+            <!-- Empty state -->
+            <div v-if="filteredDevices.length === 0" class="py-16 text-center">
+                <svg class="mx-auto h-10 w-10 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                <p class="mt-3 text-[13px] text-slate-500">
+                    {{ search || statusFilter ? 'No devices match your filters.' : 'No devices added yet.' }}
+                </p>
+                <Link v-if="canManage && !search && !statusFilter" href="/devices/create" class="mt-3 inline-block text-[13px] font-medium text-cyan-400 hover:text-cyan-300">
+                    Add your first device →
+                </Link>
+            </div>
 
-                <div class="overflow-hidden rounded-lg bg-white shadow">
-                    <div v-if="filteredDevices.length === 0" class="p-12 text-center">
-                        <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
-                        <p class="mt-3 text-sm text-gray-500">No devices have been added yet.</p>
-                        <Link v-if="canManage" href="/devices/create" class="mt-3 inline-block text-sm font-medium text-indigo-600 hover:text-indigo-500">
-                            Add your first device &rarr;
-                        </Link>
-                    </div>
-
-                    <div v-else class="overflow-x-auto">
-
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Name</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">IP Address</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Status</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Model</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Last Seen</th>
-                                    <th class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100 bg-white">
-                                <tr v-for="device in filteredDevices" :key="device.id" class="hover:bg-gray-50">
-                                    <td class="whitespace-nowrap px-6 py-4">
-                                        <Link :href="`/devices/${device.id}`" class="font-medium text-gray-900 hover:text-indigo-600">
-                                            {{ device.name }}
-                                        </Link>
-                                    </td>
-                                    <td class="whitespace-nowrap px-6 py-4 font-mono text-sm text-gray-600">
-                                        {{ device.ip_address }}
-                                    </td>
-                                    <td class="whitespace-nowrap px-6 py-4">
-                                        <StatusIndicator :status="device.status" />
-                                    </td>
-                                    <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-                                        {{ device.model || '—' }}
-                                    </td>
-                                    <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-                                        {{ formatLastSeen(device.last_seen_at) }}
-                                    </td>
-                                    <td class="whitespace-nowrap px-6 py-4 text-right text-sm">
-                                        <div class="flex items-center justify-end gap-3">
-                                            <Link
-                                                :href="`/devices/${device.id}`"
-                                                class="text-indigo-600 hover:text-indigo-500"
-                                            >
-                                                View
-                                            </Link>
-                                            <Link
-                                                v-if="canManage"
-                                                :href="`/devices/${device.id}/edit`"
-                                                class="text-gray-600 hover:text-gray-900"
-                                            >
-                                                Edit
-                                            </Link>
-                                            <button
-                                                v-if="canManage"
-                                                type="button"
-                                                @click="deleteDevice(device)"
-                                                class="text-red-600 hover:text-red-500"
-                                            >
-                                                Delete
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+            <div v-else class="overflow-x-auto">
+                <table class="min-w-full text-[13px]">
+                    <thead>
+                        <tr class="border-b border-white/[0.06] text-left text-[11px] uppercase tracking-wider text-slate-500">
+                            <th class="px-5 py-3 font-medium">Name</th>
+                            <th class="px-5 py-3 font-medium">IP Address</th>
+                            <th class="px-5 py-3 font-medium">Status</th>
+                            <th class="px-5 py-3 font-medium">Model</th>
+                            <th class="px-5 py-3 font-medium">Last Seen</th>
+                            <th class="px-5 py-3 text-right font-medium">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/[0.04]">
+                        <tr
+                            v-for="device in filteredDevices"
+                            :key="device.id"
+                            class="group hover:bg-slate-800/40"
+                        >
+                            <td class="whitespace-nowrap px-5 py-3">
+                                <Link :href="`/devices/${device.id}`" class="font-medium text-slate-100 hover:text-cyan-400">
+                                    {{ device.name }}
+                                </Link>
+                            </td>
+                            <td class="whitespace-nowrap px-5 py-3 font-mono text-slate-400">{{ device.ip_address }}</td>
+                            <td class="whitespace-nowrap px-5 py-3">
+                                <StatusIndicator :status="device.status" />
+                            </td>
+                            <td class="whitespace-nowrap px-5 py-3 text-slate-400">{{ device.model || '—' }}</td>
+                            <td class="whitespace-nowrap px-5 py-3 tabular-nums text-slate-500">{{ formatLastSeen(device.last_seen_at) }}</td>
+                            <td class="whitespace-nowrap px-5 py-3 text-right">
+                                <div class="flex items-center justify-end gap-3">
+                                    <Link :href="`/devices/${device.id}`" class="text-cyan-400 hover:text-cyan-300">View</Link>
+                                    <Link v-if="canManage" :href="`/devices/${device.id}/edit`" class="text-slate-400 hover:text-slate-200">Edit</Link>
+                                    <button v-if="canManage" type="button" @click="deleteDevice(device)" class="text-red-500 hover:text-red-400">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </AuthenticatedLayout>
 </template>
-
