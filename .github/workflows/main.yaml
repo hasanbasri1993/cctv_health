@@ -1,137 +1,88 @@
 name: CI/CD Laravel Vue.js
-'on':
+
+on:
   push:
     branches:
       - main
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-22.04
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-      - name: Cache node modules
-        id: cache-npm
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-node-modules
+          fetch-depth: 2
+
+      - name: Check for frontend changes
+        id: check-frontend
+        run: |
+          if git diff --name-only HEAD~1..HEAD | grep -qE '^(resources/|package\.json|vite\.config)'; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up Node.js
+        if: steps.check-frontend.outputs.has_changes == 'true'
+        uses: actions/setup-node@v4
         with:
-          path: ~/.npm
-          key: >-
-            ${{ runner.os }}-build-${{ env.cache-name }}-${{
-            hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
-      - if: '${{ steps.cache-npm.outputs.cache-hit != ''true'' }}'
-        name: List the state of node modules
-        continue-on-error: true
-        run: npm list
-      - name: Deploy to Server
-        uses: appleboy/ssh-action@master
+          node-version: 22
+          cache: npm
+
+      - name: Install JS dependencies
+        if: steps.check-frontend.outputs.has_changes == 'true'
+        run: npm ci
+
+      - name: Build frontend assets
+        if: steps.check-frontend.outputs.has_changes == 'true'
+        run: npm run build
+
+      - name: Deploy PHP to server
+        uses: appleboy/ssh-action@v1.2.0
         with:
-          host: '${{ secrets.SSH_HOST }}'
-          username: '${{ secrets.SSH_USER }}'
-          port: '${{ secrets.SSH_PORT }}'
-          key: '${{ secrets.SSH_KEY }}'
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          port: ${{ secrets.SSH_PORT }}
+          key: ${{ secrets.SSH_KEY }}
           script: |
             cd /www/wwwroot/cctv
             git config --global --add safe.directory /www/wwwroot/cctv
-            git checkout main
-            git reset --hard
-            git pull --rebase
-            /www/server/php/82/bin/php /usr/local/bin/composer update --no-dev
+            git fetch origin main
+            git reset --hard origin/main
+            /www/server/php/82/bin/php /usr/local/bin/composer install --no-dev --optimize-autoloader --no-interaction
             /www/server/php/82/bin/php artisan optimize
-            /www/server/php/82/bin/php artisan octane:stop
-            sudo chmod -R 777 storage/*
-            for item in *; do
-              if [[ "$item" != "public/.user.ini" && "$item" != "public" ]]; then
-                sudo chown -R www:www "$item"
-              fi
-            done
-      - name: Check for changes in resources/src
-        id: check-src-changes
-        run: |
-          # Determine the comparison range. 
-          # For pushes, we compare against the commit before the push.
-          if [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ] && [ -n "${{ github.event.before }}" ]; then
-            RANGE="${{ github.event.before }}..${{ github.event.after }}"
-          else
-            # For the first push or if 'before' is missing, compare the last commit.
-            # We use 'HEAD~1..HEAD' if it exists, otherwise fall back to checking the current commit files.
-            if git rev-parse --verify HEAD~1 > /dev/null 2>&1; then
-              RANGE="HEAD~1..HEAD"
-            else
-              RANGE="HEAD"
-            fi
-          fi
+            /www/server/php/82/bin/php artisan migrate --force
+            /www/server/php/82/bin/php artisan octane:reload
+            /www/server/php/82/bin/php artisan queue:restart
+            sudo chmod -R 775 storage bootstrap/cache
+            sudo chown -R www:www storage bootstrap/cache
 
-          echo "Comparing range: $RANGE"
-          
-          # Get the list of changed files
-          if [ "$RANGE" == "HEAD" ]; then
-            # If it's a single commit with no parent, list all files in it
-            CHANGED_FILES=$(git ls-tree -r --name-only HEAD)
-          else
-            CHANGED_FILES=$(git diff --name-only $RANGE)
-          fi
-
-          # Check if any file in resources/src has changed
-          if echo "$CHANGED_FILES" | grep -q "^resources/src/"; then
-            echo "has_changes=true" >> $GITHUB_OUTPUT
-            echo "Found changes in resources/src/"
-          else
-            echo "has_changes=false" >> $GITHUB_OUTPUT
-            echo "No changes in resources/src/, skipping Vue.js build steps"
-          fi
-      - name: Set up Node.js
-        if: steps.check-src-changes.outputs.has_changes == 'true'
-        uses: actions/setup-node@v3
+      - name: Transfer frontend build
+        if: steps.check-frontend.outputs.has_changes == 'true'
+        uses: appleboy/scp-action@v0.1.7
         with:
-          node-version: 22.14.0
-      - name: Install Vue.js dependencies
-        if: steps.check-src-changes.outputs.has_changes == 'true'
-        run: |
-          npm install
-      - name: Build Vue.js
-        if: steps.check-src-changes.outputs.has_changes == 'true'
-        env:
-          NODE_ENV: production
-          APP_ENV: production
-          MIX_PUSHER_APP_KEY: '${{ secrets.MIX_PUSHER_APP_KEY }}'
-          MIX_PUSHER_HOST: '${{ secrets.MIX_PUSHER_HOST }}'
-          MIX_PUSHER_PORT: '${{ secrets.MIX_PUSHER_PORT }}'
-        run: |
-          npm run production
-          ls -la public
-      - name: Transfer Vue.js Built Files
-        if: steps.check-src-changes.outputs.has_changes == 'true'
-        uses: appleboy/scp-action@master
-        with:
-          host: '${{ secrets.SSH_HOST }}'
-          username: '${{ secrets.SSH_USER }}'
-          port: '${{ secrets.SSH_PORT }}'
-          key: '${{ secrets.SSH_KEY }}'
-          source: './public/js/*,./public/mix-manifest.json'
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          port: ${{ secrets.SSH_PORT }}
+          key: ${{ secrets.SSH_KEY }}
+          source: public/build/*
           target: /www/wwwroot/cctv
-      - name: Clear Cache Cloudflare
-        env:
-          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
-          CLOUDFLARE_EMAIL: ${{ secrets.CLOUDFLARE_EMAIL }}
-          CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
+
+      - name: Purge Cloudflare cache
+        if: steps.check-frontend.outputs.has_changes == 'true'
         run: |
-          curl -sS -X POST "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/purge_cache" \
+          curl -sS -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CLOUDFLARE_ZONE_ID }}/purge_cache" \
             -H "Content-Type: application/json" \
-            -H "X-Auth-Email: ${CLOUDFLARE_EMAIL}" \
-            -H "Authorization: Bearer ${CLOUDFLARE_API_KEY}" \
-            --data '{"hosts": ["cctv.daarululuumlido.com"]}'
-      - name: Send message to Telegram
+            -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_KEY }}" \
+            --data '{"hosts":["cctv.daarululuumlido.com"]}'
+
+      - name: Notify Telegram
         uses: Lukasss93/telegram-action@v2
         if: always()
         env:
-          TELEGRAM_TOKEN: '${{ secrets.TELEGRAM_TOKEN }}'
-          TELEGRAM_CHAT: '${{ secrets.TELEGRAM_CHAT }}'
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT: ${{ secrets.TELEGRAM_CHAT }}
         with:
-          status: '${{job.status}}'
+          status: ${{ job.status }}
