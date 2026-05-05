@@ -3,18 +3,23 @@
 namespace App\Http\Controllers;
 
 use App\Contracts\HikvisionISAPIServiceInterface;
+use App\Http\Requests\StoreDeviceRequest;
+use App\Http\Requests\UpdateDeviceRequest;
 use App\Models\Device;
+use App\Services\DeviceService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DeviceController extends Controller
 {
+    public function __construct(private DeviceService $deviceService)
+    {
+    }
+
     public function index(): Response
     {
-        $devices = Device::withCount(['channels', 'alerts' => fn ($q) => $q->whereIn('status', ['active', 'acknowledged'])])
-            ->orderBy('name')
-            ->get();
+        $devices = $this->deviceService->getDevicesWithStats();
 
         return Inertia::render('Devices/Index', [
             'devices' => $devices,
@@ -26,64 +31,20 @@ class DeviceController extends Controller
         return Inertia::render('Devices/Create');
     }
 
-    public function store(Request $request)
+    public function store(StoreDeviceRequest $request)
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'ip_address' => ['required', 'ip'],
-            'port' => ['required', 'integer', 'min:1', 'max:65535'],
-            'username' => ['required', 'string', 'max:255'],
-            'password' => ['required', 'string', 'max:255'],
-            'model' => ['nullable', 'string', 'max:255'],
-        ]);
-
-        $device = Device::create($validated);
+        $device = $this->deviceService->createDevice($request->validated());
 
         return redirect()->route('devices.show', $device)->with('success', 'Device added successfully.');
     }
 
     public function show(Device $device): Response
     {
-        $device->load([
-            'channels' => fn ($q) => $q->orderBy('channel_number'),
-            'storages' => fn ($q) => $q->orderBy('storage_id'),
-        ]);
-
-        $alerts = $device->alerts()
-            ->with('alertable')
-            ->latest()
-            ->limit(20)
-            ->get();
-
         $perPage = in_array((int) request('per_page'), [5, 10, 15, 20]) ? (int) request('per_page') : 20;
 
-        $healthLogs = $device->healthLogs()
-            ->latest()
-            ->paginate($perPage);
+        $details = $this->deviceService->getDeviceDetails($device, $perPage);
 
-        $tempStats = $device->healthLogs()
-            ->whereNotNull('temperature')
-            ->selectRaw('MAX(temperature) as max, MIN(temperature) as min, ROUND(AVG(temperature), 1) as avg')
-            ->first();
-
-        $lastTemp = $device->healthLogs()
-            ->whereNotNull('temperature')
-            ->latest()
-            ->value('temperature');
-
-        return Inertia::render('Devices/Show', [
-            'device' => $device,
-            'channels' => $device->channels,
-            'storages' => $device->storages,
-            'alerts' => $alerts,
-            'healthLogs' => $healthLogs,
-            'tempStats' => $tempStats ? [
-                'last' => $lastTemp,
-                'min' => $tempStats->min,
-                'max' => $tempStats->max,
-                'avg' => $tempStats->avg,
-            ] : null,
-        ]);
+        return Inertia::render('Devices/Show', $details);
     }
 
     public function edit(Device $device): Response
@@ -93,34 +54,16 @@ class DeviceController extends Controller
         ]);
     }
 
-    public function update(Request $request, Device $device)
+    public function update(UpdateDeviceRequest $request, Device $device)
     {
-        $rules = [
-            'name' => ['required', 'string', 'max:255'],
-            'ip_address' => ['required', 'ip'],
-            'port' => ['required', 'integer', 'min:1', 'max:65535'],
-            'username' => ['required', 'string', 'max:255'],
-            'model' => ['nullable', 'string', 'max:255'],
-        ];
-
-        if ($request->filled('password')) {
-            $rules['password'] = ['string', 'max:255'];
-        }
-
-        $validated = $request->validate($rules);
-
-        if (empty($validated['password'])) {
-            unset($validated['password']);
-        }
-
-        $device->update($validated);
+        $this->deviceService->updateDevice($device, $request->validated());
 
         return redirect()->route('devices.show', $device)->with('success', 'Device updated successfully.');
     }
 
     public function destroy(Device $device)
     {
-        $device->delete();
+        $this->deviceService->deleteDevice($device);
 
         return redirect()->route('devices.index')->with('success', 'Device deleted.');
     }
@@ -139,13 +82,7 @@ class DeviceController extends Controller
 
     public function healthHistory(Device $device)
     {
-        $logs = $device->healthLogs()
-            ->select('status', 'response_time_ms', 'temperature', 'created_at')
-            ->latest()
-            ->limit(120)
-            ->get()
-            ->reverse()
-            ->values();
+        $logs = $this->deviceService->getHealthHistory($device);
 
         return response()->json($logs);
     }

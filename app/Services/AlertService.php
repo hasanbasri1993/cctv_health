@@ -7,6 +7,9 @@ use App\Models\Alert;
 use App\Models\Device;
 use App\Models\DeviceChannel;
 use App\Models\DeviceStorage;
+use App\Models\User;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AlertService
 {
@@ -169,5 +172,75 @@ class AlertService
     private function queueNotification(Alert $alert): void
     {
         dispatch(new NotifyAlertJob($alert));
+    }
+
+    public function getAlerts(array $filters, int $perPage = 25): LengthAwarePaginator
+    {
+        $query = Alert::with(['device', 'acknowledgedBy'])->latest();
+
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        if (!empty($filters['severity'])) {
+            $query->where('severity', $filters['severity']);
+        }
+
+        if (!empty($filters['device_id'])) {
+            $query->where('device_id', $filters['device_id']);
+        }
+
+        return $query->paginate($perPage)->withQueryString();
+    }
+
+    public function acknowledgeAlert(Alert $alert, User $user): bool
+    {
+        if (! $alert->isActive()) {
+            return false;
+        }
+
+        return $alert->update([
+            'status' => 'acknowledged',
+            'acknowledged_at' => now(),
+            'acknowledged_by' => $user->id,
+        ]);
+    }
+
+    public function exportAlerts(array $filters): StreamedResponse
+    {
+        $query = Alert::with('device')->latest();
+
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        if (!empty($filters['severity'])) {
+            $query->where('severity', $filters['severity']);
+        }
+
+        $filename = 'alerts-' . now()->format('Y-m-d') . '.csv';
+
+        return response()->streamDownload(function () use ($query) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['ID', 'Device', 'Type', 'Severity', 'Title', 'Status', 'Created At', 'Acknowledged At', 'Resolved At']);
+
+            $query->chunk(500, function ($alerts) use ($handle) {
+                foreach ($alerts as $alert) {
+                    fputcsv($handle, [
+                        $alert->id,
+                        $alert->device->name ?? '',
+                        $alert->type,
+                        $alert->severity,
+                        $alert->title,
+                        $alert->status,
+                        $alert->created_at->toDateTimeString(),
+                        $alert->acknowledged_at?->toDateTimeString() ?? '',
+                        $alert->resolved_at?->toDateTimeString() ?? '',
+                    ]);
+                }
+            });
+
+            fclose($handle);
+        }, $filename, ['Content-Type' => 'text/csv']);
     }
 }

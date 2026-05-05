@@ -1,0 +1,56 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Alert;
+use App\Models\Device;
+use App\Models\DeviceChannel;
+use App\Models\DeviceStorage;
+use Illuminate\Support\Facades\Cache;
+
+class DashboardService
+{
+    public function cloneDashboardData(): array
+    {
+        return $this->getDashboardData();
+    }
+
+    public function getDashboardData(): array
+    {
+        $devices = Device::withCount([
+            'channels',
+            'alerts as active_alerts_count'       => fn ($q) => $q->whereIn('status', ['active', 'acknowledged']),
+            'channels as no_video_count'           => fn ($q) => $q->where('status', 'no_video'),
+            'storages as fault_storage_count'      => fn ($q) => $q->whereIn('health_status', ['fault', 'unknown']),
+        ])->with([
+            'channels' => fn ($q) => $q->where('status', 'no_video')
+                                       ->select('id', 'device_id', 'channel_number', 'name', 'status'),
+            'storages'  => fn ($q) => $q->whereIn('health_status', ['fault', 'unknown'])
+                                       ->select('id', 'device_id', 'name', 'health_status', 'temperature'),
+        ])->orderBy('name')->get();
+
+        $stats = Cache::remember('dashboard.stats', 30, function () use ($devices) {
+            $offlineDeviceIds = $devices->where('status', 'offline')->pluck('id');
+
+            return [
+                'total_devices'         => $devices->count(),
+                'online_devices'        => $devices->where('status', 'online')->count(),
+                'offline_devices'       => $devices->where('status', 'offline')->count(),
+                'active_alerts'         => Alert::whereIn('status', ['active', 'acknowledged'])->count(),
+
+                // Status breakdown categories
+                'video_loss'            => DeviceChannel::where('status', 'no_video')->count(),
+                'comm_exception'        => $offlineDeviceIds->count(),
+                'recording_exception'   => DeviceStorage::whereIn('health_status', ['fault', 'unknown'])
+                                              ->whereHas('device', fn ($q) => $q->where('status', 'online'))
+                                              ->count(),
+                'storage_fault'         => DeviceStorage::where('health_status', 'fault')->count(),
+            ];
+        });
+
+        return [
+            'devices' => $devices,
+            'stats' => $stats,
+        ];
+    }
+}
