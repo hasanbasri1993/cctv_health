@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Alert;
+use App\Models\SystemConfiguration;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
@@ -19,15 +20,15 @@ class ConfigurationController extends Controller
     {
         return Inertia::render('Configuration/Index', [
             'config' => [
-                'polling_channel_interval' => env('POLLING_CHANNEL_INTERVAL', 1),
-                'polling_storage_interval' => env('POLLING_STORAGE_INTERVAL', 5),
-                'polling_device_interval' => env('POLLING_DEVICE_INTERVAL', 2),
-                'notification_reminder_interval' => env('NOTIFICATION_REMINDER_INTERVAL', 60),
-                'telegram_bot_token' => env('TELEGRAM_BOT_TOKEN') ? '***configured***' : '',
-                'telegram_chat_ids' => env('TELEGRAM_CHAT_ID', ''),
-                'telegram_message_thread_id' => env('TELEGRAM_MESSAGE_THREAD_ID', ''),
-                'mail_from_address' => env('MAIL_FROM_ADDRESS', ''),
-                'alert_email_recipients' => env('ALERT_EMAIL_RECIPIENTS', ''),
+                'polling_channel_interval' => (int) SystemConfiguration::getValue('POLLING_CHANNEL_INTERVAL', env('POLLING_CHANNEL_INTERVAL', 1)),
+                'polling_storage_interval' => (int) SystemConfiguration::getValue('POLLING_STORAGE_INTERVAL', env('POLLING_STORAGE_INTERVAL', 5)),
+                'polling_device_interval' => (int) SystemConfiguration::getValue('POLLING_DEVICE_INTERVAL', env('POLLING_DEVICE_INTERVAL', 2)),
+                'notification_reminder_interval' => (int) SystemConfiguration::getValue('NOTIFICATION_REMINDER_INTERVAL', env('NOTIFICATION_REMINDER_INTERVAL', 60)),
+                'telegram_bot_token' => SystemConfiguration::getValue('TELEGRAM_BOT_TOKEN', env('TELEGRAM_BOT_TOKEN')) ? '***configured***' : '',
+                'telegram_chat_ids' => SystemConfiguration::getValue('TELEGRAM_CHAT_ID', env('TELEGRAM_CHAT_ID', '')),
+                'telegram_message_thread_id' => SystemConfiguration::getValue('TELEGRAM_MESSAGE_THREAD_ID', env('TELEGRAM_MESSAGE_THREAD_ID', '')),
+                'mail_from_address' => SystemConfiguration::getValue('MAIL_FROM_ADDRESS', env('MAIL_FROM_ADDRESS', '')),
+                'alert_email_recipients' => SystemConfiguration::getValue('ALERT_EMAIL_RECIPIENTS', env('ALERT_EMAIL_RECIPIENTS', '')),
             ],
         ]);
     }
@@ -78,7 +79,16 @@ class ConfigurationController extends Controller
             } else {
                 $envContent .= "\n{$key}={$value}";
             }
+
+            SystemConfiguration::setValue($key, $value);
         }
+
+        if (! empty($validated['telegram_bot_token']) && $validated['telegram_bot_token'] !== '***configured***') {
+            SystemConfiguration::setValue('TELEGRAM_BOT_TOKEN', $validated['telegram_bot_token']);
+        }
+
+        $mailValue = $validated['mail_from_address'] ?? '';
+        SystemConfiguration::setValue('MAIL_FROM_ADDRESS', $mailValue);
 
         file_put_contents($envPath, $envContent);
         Artisan::call('config:clear');
@@ -88,9 +98,9 @@ class ConfigurationController extends Controller
 
     public function testTelegram(Request $request, NotificationService $notificationService)
     {
-        $token = $request->input('telegram_bot_token') ?: config('services.telegram.bot_token');
-        $chatIdsInput = $request->input('telegram_chat_ids') ?: config('services.telegram.chat_ids', []);
-        $messageThreadId = $request->input('telegram_message_thread_id') ?: config('services.telegram.message_thread_id');
+        $token = $request->input('telegram_bot_token') ?: SystemConfiguration::getValue('TELEGRAM_BOT_TOKEN', config('services.telegram.bot_token'));
+        $chatIdsInput = $request->input('telegram_chat_ids') ?: SystemConfiguration::getValue('TELEGRAM_CHAT_ID', config('services.telegram.chat_ids', []));
+        $messageThreadId = $request->input('telegram_message_thread_id') ?: SystemConfiguration::getValue('TELEGRAM_MESSAGE_THREAD_ID', config('services.telegram.message_thread_id'));
 
         if (is_string($chatIdsInput)) {
             $chatIds = array_filter(explode(',', $chatIdsInput), fn($id) => trim($id) !== '');
@@ -140,8 +150,8 @@ class ConfigurationController extends Controller
 
     public function testEmail(Request $request)
     {
-        $mailFrom = $request->input('mail_from_address') ?: config('mail.from.address');
-        $recipients = $request->input('alert_email_recipients') ?: config('monitoring.email_recipients', []);
+        $mailFrom = $request->input('mail_from_address') ?: SystemConfiguration::getValue('MAIL_FROM_ADDRESS', config('mail.from.address'));
+        $recipients = $request->input('alert_email_recipients') ?: SystemConfiguration::getValue('ALERT_EMAIL_RECIPIENTS', config('monitoring.email_recipients', []));
 
         if (is_string($recipients)) {
             $recipients = array_filter(explode(',', $recipients), fn($email) => filter_var(trim($email), FILTER_VALIDATE_EMAIL));
