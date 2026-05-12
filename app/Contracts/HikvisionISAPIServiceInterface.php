@@ -5,6 +5,7 @@ namespace App\Contracts;
 use App\DTOs\ChannelStatusResponse;
 use App\DTOs\ConnectionTestResult;
 use App\DTOs\DeviceHealthResponse;
+use App\DTOs\InputProxyChannelResponse;
 use App\DTOs\StorageStatusResponse;
 use App\Models\Device;
 
@@ -17,4 +18,6 @@ interface HikvisionISAPIServiceInterface
     public function getDeviceHealth(Device $device): DeviceHealthResponse;
 
     public function testConnection(Device $device): ConnectionTestResult;
+
+    public function getInputProxyChannels(Device $device): InputProxyChannelResponse;
 }
