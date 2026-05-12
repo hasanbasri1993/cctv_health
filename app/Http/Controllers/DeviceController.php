@@ -7,6 +7,7 @@ use App\Http\Requests\StoreDeviceRequest;
 use App\Http\Requests\UpdateDeviceRequest;
 use App\Models\Device;
 use App\Services\DeviceService;
+use App\Services\FrigateConfigExportService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -85,5 +86,23 @@ class DeviceController extends Controller
         $logs = $this->deviceService->getHealthHistory($device);
 
         return response()->json($logs);
+    }
+
+    public function frigateConfig(FrigateConfigExportService $exporter): Response
+    {
+        $yaml = $exporter->generate();
+
+        return Inertia::render('Devices/FrigateConfig', [
+            'yaml' => $yaml,
+        ]);
+    }
+
+    public function downloadFrigateConfig(FrigateConfigExportService $exporter)
+    {
+        $yaml = $exporter->generate();
+
+        return response($yaml)
+            ->header('Content-Type', 'text/yaml')
+            ->header('Content-Disposition', 'attachment; filename="frigate-config.yml"');
     }
 }
