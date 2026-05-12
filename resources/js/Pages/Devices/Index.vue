@@ -62,16 +62,28 @@ function deleteDevice(device) {
                     <h2 class="text-[17px] font-semibold text-slate-100">Devices</h2>
                     <p class="text-[13px] text-slate-500">{{ stats.total }} registered device{{ stats.total !== 1 ? 's' : '' }}</p>
                 </div>
-                <Link
-                    v-if="canManage"
-                    href="/devices/create"
-                    class="inline-flex items-center gap-1.5 rounded-md bg-cyan-600 px-3 py-2 text-[13px] font-medium text-white shadow-sm transition-colors hover:bg-cyan-500"
-                >
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                    </svg>
-                    Add Device
-                </Link>
+                <div class="flex items-center gap-2">
+                    <Link
+                        v-if="canManage"
+                        href="/devices/export/frigate-config"
+                        class="inline-flex items-center gap-1.5 rounded-md border border-white/[0.08] bg-slate-800/60 px-3 py-2 text-[13px] font-medium text-slate-300 shadow-sm transition-all hover:bg-slate-700/60 hover:text-slate-100"
+                    >
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        Frigate Config
+                    </Link>
+                    <Link
+                        v-if="canManage"
+                        href="/devices/create"
+                        class="inline-flex items-center gap-1.5 rounded-md bg-cyan-600 px-3 py-2 text-[13px] font-medium text-white shadow-sm transition-colors hover:bg-cyan-500"
+                    >
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Add Device
+                    </Link>
+                </div>
             </div>
         </template>
 
