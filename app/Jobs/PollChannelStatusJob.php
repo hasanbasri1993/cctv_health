@@ -66,6 +66,45 @@ class PollChannelStatusJob implements ShouldQueue
                 }
             }
         }
+
+        // Poll IP cameras connected via InputProxy (NVR-linked cameras)
+        $proxyResponse = $isapi->getInputProxyChannels($this->device);
+
+        if ($proxyResponse->success) {
+            foreach ($proxyResponse->channels as $proxyData) {
+                $channel = DeviceChannel::updateOrCreate(
+                    [
+                        'device_id' => $this->device->id,
+                        'channel_number' => $proxyData['channel_number'],
+                    ],
+                    [
+                        'name' => $proxyData['name'],
+                        'signal_quality' => null,
+                    ]
+                );
+
+                $previousStatus = $channel->status;
+                $newStatus = $proxyData['status'];
+
+                if ($previousStatus !== $newStatus) {
+                    $channel->update([
+                        'status' => $newStatus,
+                        'last_status_change' => now(),
+                    ]);
+
+                    if ($newStatus === 'no_video') {
+                        $alertService->createChannelAlert($channel->fresh(), $newStatus);
+                    } elseif (in_array($newStatus, ['ok', 'disabled'])) {
+                        $alertService->resolveChannelAlerts($channel->fresh());
+                    }
+                }
+            }
+        } else {
+            Log::info('Input proxy channels not available', [
+                'device_id' => $this->device->id,
+                'error' => $proxyResponse->error,
+            ]);
+        }
     }
 
     public function failed(\Throwable $exception): void
