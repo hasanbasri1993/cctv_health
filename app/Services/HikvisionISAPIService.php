@@ -6,6 +6,7 @@ use App\Contracts\HikvisionISAPIServiceInterface;
 use App\DTOs\ChannelStatusResponse;
 use App\DTOs\ConnectionTestResult;
 use App\DTOs\DeviceHealthResponse;
+use App\DTOs\InputProxyChannelResponse;
 use App\DTOs\StorageStatusResponse;
 use App\Models\Device;
 use Illuminate\Http\Client\ConnectionException;
@@ -49,6 +50,35 @@ class HikvisionISAPIService implements HikvisionISAPIServiceInterface
             ]);
 
             return ChannelStatusResponse::failure($e->getMessage());
+        }
+    }
+
+    public function getInputProxyChannels(Device $device): InputProxyChannelResponse
+    {
+        try {
+            $response = $this->makeRequest($device, '/ISAPI/ContentMgmt/InputProxy/channels');
+
+            if (! $response->successful()) {
+                return InputProxyChannelResponse::failure("HTTP {$response->status()}");
+            }
+
+            $channels = $this->parseInputProxyChannels($response->body());
+
+            return InputProxyChannelResponse::success($channels);
+        } catch (ConnectionException $e) {
+            Log::warning('ISAPI input proxy channels connection failed', [
+                'device_id' => $device->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return InputProxyChannelResponse::failure('Connection timeout: '.$e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('ISAPI input proxy channels error', [
+                'device_id' => $device->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return InputProxyChannelResponse::failure($e->getMessage());
         }
     }
 
@@ -364,5 +394,34 @@ class HikvisionISAPIService implements HikvisionISAPIServiceInterface
             'ERROR', 'FAULT' => 'fault',
             default => 'unknown',
         };
+    }
+
+    private function parseInputProxyChannels(string $xml): array
+    {
+        $channels = [];
+        $ns = 'http://www.hikvision.com/ver20/XMLSchema';
+
+        try {
+            $doc = new \SimpleXMLElement($xml);
+
+            foreach ($doc->children($ns)->InputProxyChannel as $channel) {
+                $ch = $channel->children($ns);
+                $srcDesc = $ch->sourceInputPortDescriptor ? $ch->sourceInputPortDescriptor->children($ns) : null;
+
+                $channels[] = [
+                    'channel_number' => (int) $ch->id,
+                    'name' => (string) ($ch->name ?? ''),
+                    'proxy_protocol' => $srcDesc ? (string) ($srcDesc->proxyProtocol ?? '') : '',
+                    'ip_address' => $srcDesc ? (string) ($srcDesc->ipAddress ?? '') : '',
+                    'port' => $srcDesc ? (int) ($srcDesc->managePortNo ?? 0) : 0,
+                    'stream_type' => $srcDesc ? (string) ($srcDesc->streamType ?? '') : '',
+                    'status' => 'ok',
+                ];
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to parse input proxy channels XML', ['error' => $e->getMessage()]);
+        }
+
+        return $channels;
     }
 }
