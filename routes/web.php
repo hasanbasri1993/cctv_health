@@ -30,6 +30,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('devices', DeviceController::class);
     Route::post('/devices/{device}/test', [DeviceController::class, 'testConnection'])->name('devices.test')->middleware('throttle:devices.test');
     Route::get('/devices/{device}/health-history', [DeviceController::class, 'healthHistory'])->name('devices.health-history');
+    Route::get('/devices/export/frigate-config', [DeviceController::class, 'frigateConfig'])->name('devices.frigate-config');
+    Route::get('/devices/export/frigate-config/download', [DeviceController::class, 'downloadFrigateConfig'])->name('devices.frigate-config.download');
 
     Route::get('/alerts', [AlertController::class, 'index'])->name('alerts.index');
     Route::post('/alerts/{alert}/acknowledge', [AlertController::class, 'acknowledge'])->name('alerts.acknowledge');
