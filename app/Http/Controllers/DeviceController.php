@@ -44,6 +44,7 @@ class DeviceController extends Controller
         $perPage = in_array((int) request('per_page'), [5, 10, 15, 20]) ? (int) request('per_page') : 20;
 
         $details = $this->deviceService->getDeviceDetails($device, $perPage);
+        $details['device'] = $details['device']->makeVisible(['username', 'password']);
 
         return Inertia::render('Devices/Show', $details);
     }

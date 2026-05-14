@@ -64,6 +64,15 @@ function deleteDevice(device) {
                 </div>
                 <div class="flex items-center gap-2">
                     <Link
+                        href="/export/openapi"
+                        class="inline-flex items-center gap-1.5 rounded-md border border-white/[0.08] bg-slate-800/60 px-3 py-2 text-[13px] font-medium text-slate-300 shadow-sm transition-all hover:bg-slate-700/60 hover:text-slate-100"
+                    >
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                        </svg>
+                        OpenAPI
+                    </Link>
+                    <Link
                         v-if="canManage"
                         href="/devices/export/frigate-config"
                         class="inline-flex items-center gap-1.5 rounded-md border border-white/[0.08] bg-slate-800/60 px-3 py-2 text-[13px] font-medium text-slate-300 shadow-sm transition-all hover:bg-slate-700/60 hover:text-slate-100"

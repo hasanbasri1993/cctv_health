@@ -1,12 +1,36 @@
 <script setup>
+import { ref } from 'vue';
 import StatusIndicator from '@/Components/StatusIndicator.vue';
 
-defineProps({
-    channels: {
-        type: Array,
-        required: true,
-    },
+const props = defineProps({
+    channels: { type: Array, required: true },
+    device: { type: Object, default: null },
 });
+
+const copiedKey = ref(null);
+
+function rtspUrl(channel, stream) {
+    if (!props.device) return '';
+    const ch = channel.channel_number * 100 + stream;
+    return `rtsp://${props.device.username}:${props.device.password}@${props.device.ip_address}:554/Streaming/Channels/${ch}`;
+}
+
+async function copy(channel, stream) {
+    const url = rtspUrl(channel, stream);
+    const key = `${channel.id}-${stream}`;
+    try {
+        await navigator.clipboard.writeText(url);
+    } catch {
+        const ta = document.createElement('textarea');
+        ta.value = url;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+    }
+    copiedKey.value = key;
+    setTimeout(() => { if (copiedKey.value === key) copiedKey.value = null; }, 2000);
+}
 
 function formatDate(dateStr) {
     if (!dateStr) return null;
@@ -39,6 +63,40 @@ function formatDate(dateStr) {
                 >
                     {{ new Date(channel.last_status_change).toLocaleDateString() }}
                 </p>
+
+                <!-- RTSP copy buttons -->
+                <div v-if="device" class="mt-2.5 flex gap-1">
+                    <button
+                        type="button"
+                        @click="copy(channel, 1)"
+                        :title="rtspUrl(channel, 1)"
+                        :class="copiedKey === `${channel.id}-1`
+                            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                            : 'bg-slate-700/60 text-slate-400 border-white/[0.06] hover:bg-slate-700 hover:text-slate-200'"
+                        class="flex flex-1 items-center justify-center gap-1 rounded border px-1.5 py-1 text-[10px] font-medium transition-colors"
+                    >
+                        <svg class="h-3 w-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path v-if="copiedKey !== `${channel.id}-1`" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Main
+                    </button>
+                    <button
+                        type="button"
+                        @click="copy(channel, 2)"
+                        :title="rtspUrl(channel, 2)"
+                        :class="copiedKey === `${channel.id}-2`
+                            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                            : 'bg-slate-700/60 text-slate-400 border-white/[0.06] hover:bg-slate-700 hover:text-slate-200'"
+                        class="flex flex-1 items-center justify-center gap-1 rounded border px-1.5 py-1 text-[10px] font-medium transition-colors"
+                    >
+                        <svg class="h-3 w-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path v-if="copiedKey !== `${channel.id}-2`" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Sub
+                    </button>
+                </div>
             </div>
         </div>
     </div>

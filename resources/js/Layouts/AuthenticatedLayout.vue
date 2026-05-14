@@ -32,6 +32,7 @@ const breadcrumb = computed(() => {
     if (route().current('devices.*')) return 'Devices';
     if (route().current('alerts.*')) return 'Alerts';
     if (route().current('configuration.*')) return 'Configuration';
+    if (route().current('export.*')) return 'Export';
     if (route().current('profile.*')) return 'Profile';
     return '';
 });

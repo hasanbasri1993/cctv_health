@@ -4,6 +4,7 @@ use App\Http\Controllers\AlertController;
 use App\Http\Controllers\ConfigurationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DeviceController;
+use App\Http\Controllers\OpenApiController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -36,6 +37,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/alerts', [AlertController::class, 'index'])->name('alerts.index');
     Route::post('/alerts/{alert}/acknowledge', [AlertController::class, 'acknowledge'])->name('alerts.acknowledge');
     Route::get('/alerts/export', [AlertController::class, 'export'])->name('alerts.export');
+
+    Route::get('/export/openapi', [OpenApiController::class, 'preview'])->name('export.openapi');
+    Route::get('/export/openapi/download', [OpenApiController::class, 'download'])->name('export.openapi.download');
 
     Route::middleware('role:admin')->group(function () {
         Route::get('/configuration', [ConfigurationController::class, 'index'])->name('configuration.index');

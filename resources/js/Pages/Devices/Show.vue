@@ -237,7 +237,9 @@ onUnmounted(() => { if (chartInstance) chartInstance.destroy(); });
                 <dl class="grid grid-cols-2 gap-x-6 gap-y-4 p-5 sm:grid-cols-3 lg:grid-cols-5">
                     <div>
                         <dt class="text-[11px] font-medium uppercase tracking-wider text-slate-500">IP Address</dt>
-                        <dd class="mt-1 font-mono text-[13px] text-slate-200">{{ device.ip_address }}</dd>
+                        <dd class="mt-1 font-mono text-[13px]">
+                            <a :href="`http://${device.ip_address}`" target="_blank" rel="noopener noreferrer" class="text-cyan-400 hover:text-cyan-300 hover:underline">{{ device.ip_address }}</a>
+                        </dd>
                     </div>
                     <div v-if="device.port">
                         <dt class="text-[11px] font-medium uppercase tracking-wider text-slate-500">Port</dt>
@@ -273,7 +275,7 @@ onUnmounted(() => { if (chartInstance) chartInstance.destroy(); });
                         </h3>
                     </div>
                     <div class="p-5">
-                        <ChannelGrid :channels="channels" />
+                        <ChannelGrid :channels="channels" :device="device" />
                     </div>
                 </div>
 
