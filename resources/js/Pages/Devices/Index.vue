@@ -170,7 +170,9 @@ function deleteDevice(device) {
                                     {{ device.name }}
                                 </Link>
                             </td>
-                            <td class="whitespace-nowrap px-5 py-3 font-mono text-slate-400">{{ device.ip_address }}</td>
+                            <td class="whitespace-nowrap px-5 py-3 font-mono">
+                                <a :href="`http://${device.ip_address}`" target="_blank" rel="noopener noreferrer" class="text-cyan-400 hover:text-cyan-300 hover:underline">{{ device.ip_address }}</a>
+                            </td>
                             <td class="whitespace-nowrap px-5 py-3">
                                 <StatusIndicator :status="device.status" />
                             </td>
@@ -200,7 +202,7 @@ function deleteDevice(device) {
                             <Link :href="`/devices/${device.id}`" class="block truncate font-medium text-slate-100 hover:text-cyan-400 text-[14px]">
                                 {{ device.name }}
                             </Link>
-                            <p class="font-mono text-[12px] text-slate-500 mt-0.5">{{ device.ip_address }}</p>
+                            <a :href="`http://${device.ip_address}`" target="_blank" rel="noopener noreferrer" class="font-mono text-[12px] text-cyan-400 hover:text-cyan-300 hover:underline mt-0.5 block">{{ device.ip_address }}</a>
                         </div>
                         <div class="shrink-0">
                             <StatusIndicator :status="device.status" />
