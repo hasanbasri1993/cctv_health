@@ -1,10 +1,86 @@
 <script setup>
 import { ref, computed } from 'vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 
 const props = defineProps({
     yaml: { type: String, default: '' },
+    devices: { type: Array, default: () => [] },
+    exportOptions: { type: Object, default: () => ({}) },
+});
+
+// ── Settings modal state ──────────────────────────────────────────────────────
+const showModal = ref(false);
+
+function defaultDeviceIds() {
+    const ids = props.exportOptions?.device_ids;
+    return ids ? new Set(ids) : new Set(props.devices.map(d => d.id));
+}
+
+function defaultStreamTypes() {
+    const types = props.exportOptions?.stream_types ?? {};
+    const result = {};
+    props.devices.forEach(d => {
+        result[d.id] = types[d.id] ?? 'both';
+    });
+    return result;
+}
+
+const appliedDeviceIds = ref(defaultDeviceIds());
+const appliedStreamTypes = ref(defaultStreamTypes());
+
+const pendingDeviceIds = ref(new Set());
+const pendingStreamTypes = ref({});
+
+function openModal() {
+    pendingDeviceIds.value = new Set(appliedDeviceIds.value);
+    pendingStreamTypes.value = { ...appliedStreamTypes.value };
+    showModal.value = true;
+}
+
+function closeModal() {
+    showModal.value = false;
+}
+
+function applySettings() {
+    appliedDeviceIds.value = new Set(pendingDeviceIds.value);
+    appliedStreamTypes.value = { ...pendingStreamTypes.value };
+    showModal.value = false;
+
+    const params = {};
+    const ids = [...appliedDeviceIds.value];
+    if (ids.length !== props.devices.length) {
+        params.device_ids = ids;
+    }
+    const streamTypes = {};
+    Object.entries(appliedStreamTypes.value).forEach(([id, type]) => {
+        if (type !== 'both') streamTypes[id] = type;
+    });
+    if (Object.keys(streamTypes).length) {
+        params.stream_types = streamTypes;
+    }
+
+    router.get(route('devices.frigate-config'), params, { preserveScroll: true });
+}
+
+function toggleAll(select) {
+    if (select) {
+        props.devices.forEach(d => pendingDeviceIds.value.add(d.id));
+    } else {
+        pendingDeviceIds.value.clear();
+    }
+    pendingDeviceIds.value = new Set(pendingDeviceIds.value);
+}
+
+function toggleDevice(id) {
+    const s = new Set(pendingDeviceIds.value);
+    if (s.has(id)) s.delete(id);
+    else s.add(id);
+    pendingDeviceIds.value = s;
+}
+
+const hiddenCount = computed(() => {
+    return props.devices.length - appliedDeviceIds.value.size;
 });
 
 const copied = ref(false);
@@ -167,6 +243,21 @@ async function copyToClipboard() {
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
+                    <!-- Settings button -->
+                    <button
+                        @click="openModal"
+                        class="relative inline-flex items-center gap-1.5 rounded-md border border-white/[0.08] bg-slate-800/60 px-3 py-2 text-[13px] font-medium text-slate-300 shadow-sm transition-all hover:bg-slate-700/60 hover:text-slate-100"
+                    >
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        Settings
+                        <span v-if="hiddenCount > 0" class="ml-0.5 rounded-full bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-amber-400">
+                            {{ hiddenCount }} hidden
+                        </span>
+                    </button>
+
                     <button
                         @click="copyToClipboard"
                         class="inline-flex items-center gap-1.5 rounded-md border border-white/[0.08] bg-slate-800/60 px-3 py-2 text-[13px] font-medium text-slate-300 shadow-sm transition-all hover:bg-slate-700/60 hover:text-slate-100"
@@ -269,6 +360,103 @@ async function copyToClipboard() {
                 Go to Devices →
             </Link>
         </div>
+        <!-- Export Settings Modal -->
+        <Teleport to="body">
+            <Transition
+                enter-active-class="transition-opacity duration-200"
+                leave-active-class="transition-opacity duration-150"
+                enter-from-class="opacity-0"
+                leave-to-class="opacity-0"
+            >
+                <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <!-- Backdrop -->
+                    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="closeModal" />
+
+                    <!-- Modal panel -->
+                    <div class="relative z-10 w-full max-w-md rounded-xl border border-white/[0.08] bg-slate-900 shadow-2xl">
+                        <!-- Modal header -->
+                        <div class="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
+                            <div>
+                                <h3 class="text-[15px] font-semibold text-slate-100">Export Settings</h3>
+                                <p class="mt-0.5 text-[12px] text-slate-500">Choose devices and stream type for export</p>
+                            </div>
+                            <button @click="closeModal" class="rounded-md p-1 text-slate-500 hover:text-slate-300 transition-colors">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Select all / none -->
+                        <div class="flex items-center gap-3 border-b border-white/[0.04] px-5 py-2.5">
+                            <span class="text-[11px] font-medium uppercase tracking-wider text-slate-500">Devices</span>
+                            <div class="ml-auto flex items-center gap-2">
+                                <button @click="toggleAll(true)" class="text-[12px] text-cyan-400 hover:text-cyan-300 transition-colors">Select all</button>
+                                <span class="text-slate-600">·</span>
+                                <button @click="toggleAll(false)" class="text-[12px] text-slate-400 hover:text-slate-300 transition-colors">Deselect all</button>
+                            </div>
+                        </div>
+
+                        <!-- Device list -->
+                        <div class="max-h-72 overflow-y-auto">
+                            <div
+                                v-for="device in devices"
+                                :key="device.id"
+                                class="flex items-center gap-3 px-5 py-3 border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02] transition-colors"
+                            >
+                                <!-- Checkbox -->
+                                <button
+                                    @click="toggleDevice(device.id)"
+                                    class="flex-none h-4 w-4 rounded border transition-colors"
+                                    :class="pendingDeviceIds.has(device.id)
+                                        ? 'border-cyan-500 bg-cyan-500/20'
+                                        : 'border-white/20 bg-transparent'"
+                                >
+                                    <svg v-if="pendingDeviceIds.has(device.id)" class="h-3 w-3 text-cyan-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </button>
+
+                                <!-- Device name -->
+                                <span
+                                    class="flex-1 text-[13px] truncate transition-colors"
+                                    :class="pendingDeviceIds.has(device.id) ? 'text-slate-200' : 'text-slate-500'"
+                                >
+                                    {{ device.name }}
+                                </span>
+
+                                <!-- Stream type selector -->
+                                <select
+                                    v-model="pendingStreamTypes[device.id]"
+                                    :disabled="!pendingDeviceIds.has(device.id)"
+                                    class="rounded-md border border-white/[0.08] bg-slate-800 px-2 py-1 text-[12px] text-slate-300 outline-none transition-colors focus:border-cyan-500/50 disabled:cursor-not-allowed disabled:opacity-30"
+                                >
+                                    <option value="both">Both</option>
+                                    <option value="main">Main only</option>
+                                    <option value="sub">Sub only</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Modal footer -->
+                        <div class="flex items-center justify-end gap-2 border-t border-white/[0.06] px-5 py-4">
+                            <button
+                                @click="closeModal"
+                                class="rounded-md border border-white/[0.08] px-4 py-2 text-[13px] font-medium text-slate-400 transition-colors hover:text-slate-200"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                @click="applySettings"
+                                class="rounded-md bg-cyan-600 px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-cyan-500"
+                            >
+                                Apply
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </Transition>
+        </Teleport>
     </AuthenticatedLayout>
 </template>
 

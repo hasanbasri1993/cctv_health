@@ -17,10 +17,21 @@ class FrigateConfigExportService
 
     /**
      * Generate a complete Frigate YAML config from all registered devices and their channels.
+     *
+     * $options:
+     *   'device_ids'   => int[]   — devices to include; absent/null = all
+     *   'stream_types' => array   — [device_id => 'main'|'sub'|'both']
      */
-    public function generate(): string
+    public function generate(array $options = []): string
     {
-        $devices = Device::with('channels')->get();
+        $query = Device::with('channels');
+
+        if (!empty($options['device_ids'])) {
+            $query->whereIn('id', $options['device_ids']);
+        }
+
+        $devices = $query->get();
+        $streamTypes = $options['stream_types'] ?? [];
 
         $go2rtcStreams = [];
         $cameras = [];
@@ -30,6 +41,7 @@ class FrigateConfigExportService
             $deviceSlug = $this->slugify($device->name);
             $credentials = "{$device->username}:{$device->password}";
             $rtspBase = "rtsp://{$credentials}@{$device->ip_address}:" . self::DEFAULT_RTSP_PORT;
+            $streamType = $streamTypes[$device->id] ?? 'both';
 
             foreach ($device->channels as $channel) {
                 if ($channel->status === 'disabled') {
@@ -50,20 +62,38 @@ class FrigateConfigExportService
                 $mainStreamUrl = "{$rtspBase}/Streaming/Channels/{$mainStreamId}";
                 $subStreamUrl = "{$rtspBase}/Streaming/Channels/{$subStreamId}";
 
-                // go2rtc streams (main + sub)
-                $go2rtcStreams[$cameraName] = [
-                    "- {$mainStreamUrl}",
-                    "- ffmpeg:{$cameraName}#audio=aac",
-                ];
-                $go2rtcStreams["{$cameraName}_sub"] = [
-                    "- {$subStreamUrl}",
-                ];
-
-                // Camera config with main for record + sub for detect
-                $cameras[$cameraName] = [
-                    'main_path' => "rtsp://127.0.0.1:8554/{$cameraName}",
-                    'sub_path' => "rtsp://127.0.0.1:8554/{$cameraName}_sub",
-                ];
+                if ($streamType === 'main') {
+                    $go2rtcStreams[$cameraName] = [
+                        "- {$mainStreamUrl}",
+                        "- ffmpeg:{$cameraName}#audio=aac",
+                    ];
+                    $cameras[$cameraName] = [
+                        'stream_type' => 'single',
+                        'path' => "rtsp://127.0.0.1:8554/{$cameraName}",
+                    ];
+                } elseif ($streamType === 'sub') {
+                    $go2rtcStreams[$cameraName] = [
+                        "- {$subStreamUrl}",
+                    ];
+                    $cameras[$cameraName] = [
+                        'stream_type' => 'single',
+                        'path' => "rtsp://127.0.0.1:8554/{$cameraName}",
+                    ];
+                } else {
+                    // both (default)
+                    $go2rtcStreams[$cameraName] = [
+                        "- {$mainStreamUrl}",
+                        "- ffmpeg:{$cameraName}#audio=aac",
+                    ];
+                    $go2rtcStreams["{$cameraName}_sub"] = [
+                        "- {$subStreamUrl}",
+                    ];
+                    $cameras[$cameraName] = [
+                        'stream_type' => 'both',
+                        'main_path' => "rtsp://127.0.0.1:8554/{$cameraName}",
+                        'sub_path' => "rtsp://127.0.0.1:8554/{$cameraName}_sub",
+                    ];
+                }
             }
         }
 
@@ -106,15 +136,26 @@ class FrigateConfigExportService
             $lines[] = "  {$name}:";
             $lines[] = '    ffmpeg:';
             $lines[] = '      inputs:';
-            $lines[] = "        - path: {$config['main_path']}";
-            $lines[] = '          input_args: preset-rtsp-restream';
-            $lines[] = '          roles:';
-            $lines[] = '            - record';
-            $lines[] = '            - audio';
-            $lines[] = "        - path: {$config['sub_path']}";
-            $lines[] = '          input_args: preset-rtsp-restream';
-            $lines[] = '          roles:';
-            $lines[] = '            - detect';
+
+            if ($config['stream_type'] === 'both') {
+                $lines[] = "        - path: {$config['main_path']}";
+                $lines[] = '          input_args: preset-rtsp-restream';
+                $lines[] = '          roles:';
+                $lines[] = '            - record';
+                $lines[] = '            - audio';
+                $lines[] = "        - path: {$config['sub_path']}";
+                $lines[] = '          input_args: preset-rtsp-restream';
+                $lines[] = '          roles:';
+                $lines[] = '            - detect';
+            } else {
+                $lines[] = "        - path: {$config['path']}";
+                $lines[] = '          input_args: preset-rtsp-restream';
+                $lines[] = '          roles:';
+                $lines[] = '            - record';
+                $lines[] = '            - audio';
+                $lines[] = '            - detect';
+            }
+
             $lines[] = '    detect:';
             $lines[] = '      width: ' . self::DEFAULT_DETECT_WIDTH;
             $lines[] = '      height: ' . self::DEFAULT_DETECT_HEIGHT;

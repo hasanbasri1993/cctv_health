@@ -89,21 +89,45 @@ class DeviceController extends Controller
         return response()->json($logs);
     }
 
-    public function frigateConfig(FrigateConfigExportService $exporter): Response
+    public function frigateConfig(Request $request, FrigateConfigExportService $exporter): Response
     {
-        $yaml = $exporter->generate();
+        $options = $this->buildExportOptions($request);
+        $yaml = $exporter->generate($options);
 
         return Inertia::render('Devices/FrigateConfig', [
             'yaml' => $yaml,
+            'devices' => Device::orderBy('name')->get(['id', 'name']),
+            'exportOptions' => $options,
         ]);
     }
 
-    public function downloadFrigateConfig(FrigateConfigExportService $exporter)
+    public function downloadFrigateConfig(Request $request, FrigateConfigExportService $exporter)
     {
-        $yaml = $exporter->generate();
+        $yaml = $exporter->generate($this->buildExportOptions($request));
 
         return response($yaml)
             ->header('Content-Type', 'text/yaml')
             ->header('Content-Disposition', 'attachment; filename="frigate-config.yml"');
+    }
+
+    private function buildExportOptions(Request $request): array
+    {
+        $options = [];
+
+        if ($request->has('device_ids')) {
+            $options['device_ids'] = array_map('intval', (array) $request->input('device_ids'));
+        }
+
+        if ($request->has('stream_types')) {
+            $raw = (array) $request->input('stream_types');
+            $allowed = ['main', 'sub', 'both'];
+            $options['stream_types'] = array_filter(
+                array_map(fn($v) => in_array($v, $allowed) ? $v : 'both', $raw),
+                fn($k) => is_numeric($k),
+                ARRAY_FILTER_USE_KEY
+            );
+        }
+
+        return $options;
     }
 }
